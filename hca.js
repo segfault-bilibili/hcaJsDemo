@@ -2370,11 +2370,12 @@ class HCATaskQueue {
                             + `before executing cmd ${task.cmd} from ${task.origin}`;
                         if (typeof e === "string" || e instanceof Error)
                             task.errMsg += "\n" + e.toString();
-                        this.msgHandler(new MessageEvent("message", { data: task })); // use a fake reply, won't await
+                        task.isDummy = true;
                     }
                 // send task
                 if (task.isDummy) {
-                    task.result = null;
+                    if (!task.hasErr && !task.hasResult)
+                        task.result = null;
                     const ev = new MessageEvent("message", { data: task }); // not actually sending, use a fake reply
                     this.msgHandler(ev); // won't await
                 }
@@ -2468,7 +2469,6 @@ class HCATaskQueue {
         return __awaiter(this, void 0, void 0, function* () {
             // irrecoverable error
             if (this._isAlive) {
-                this._isAlive = false;
                 // print error message
                 console.error(`[${this.origin}] destroying background worker on irrecoverable error`, data);
                 // destroy background worker
@@ -2478,6 +2478,8 @@ class HCATaskQueue {
                 catch (e) {
                     console.error(`[${this.origin}] error when trying to destroy()`, e);
                 }
+                // after destroy, mark isAlive as false (otherwise sendCmd will fail)
+                this._isAlive = false;
                 // reject all pending promises
                 for (let taskID in this.callbacks) {
                     const reject = this.callbacks[taskID].reject;
@@ -2596,7 +2598,7 @@ if (typeof document === "undefined") {
         // AudioWorklet
         class HCAFramePlayerContext {
             constructor(procOpts) {
-                this.isPlaying = false;
+                this.isPlaying = true;
                 this.defaultPullBlockCount = 128;
                 this.totalPulledBlockCount = 0;
                 this.isPulling = false;
@@ -2895,8 +2897,9 @@ if (typeof document === "undefined") {
 }
 // create & control audio worklet
 class HCAAudioWorkletHCAPlayer {
-    constructor(selfUrl, audioCtx, hcaPlayerNode, gainNode, feedBlockCount, info, source, srcBuf) {
-        this.isPlaying = false;
+    constructor(selfUrl, audioCtx, hcaPlayerNode, gainNode, feedBlockCount, info, source, srcBuf, cipher) {
+        this._initialized = true; // initially there must be something to play
+        this.isPlaying = true;
         this.verifyCsum = false;
         this.totalFedBlockCount = 0;
         this.stopCmdItem = {
@@ -2911,6 +2914,7 @@ class HCAAudioWorkletHCAPlayer {
                 }),
                 result: () => __awaiter(this, void 0, void 0, function* () {
                     yield this._pause(); // can now suspend
+                    this._initialized = false; // now we have nothing to play until next setSource
                 }),
             }
         };
@@ -2925,6 +2929,7 @@ class HCAAudioWorkletHCAPlayer {
         this.feedBlockCount = feedBlockCount;
         this.info = info;
         this.source = source;
+        this.cipher = cipher;
         this.srcBuf = srcBuf;
         this.sampleRate = info.format.samplingRate;
         this.channelCount = info.format.channelCount;
@@ -2932,6 +2937,9 @@ class HCAAudioWorkletHCAPlayer {
     }
     get isAlive() {
         return this.taskQueue.isAlive;
+    }
+    get initialized() {
+        return this._initialized;
     }
     get blockChecksumVerification() {
         return this.verifyCsum;
@@ -3027,20 +3035,18 @@ class HCAAudioWorkletHCAPlayer {
             }
         });
     }
-    static create(selfUrl, source, feedByteMax = 32768) {
+    static init(selfUrl, existingPlayers, source, key1, key2) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!(selfUrl instanceof URL))
                 throw new Error();
             if (!(source instanceof Uint8Array || source instanceof URL))
                 throw new Error();
-            if (typeof feedByteMax !== "number" || isNaN(feedByteMax))
-                throw new Error();
             let actualSource;
             let info;
             let srcBuf = undefined;
             if (source instanceof Uint8Array) {
-                actualSource = source;
-                info = new HCAInfo(source);
+                actualSource = source.slice(0);
+                info = new HCAInfo(actualSource);
             }
             else if (source instanceof URL) {
                 const fetched = yield this.getHCAInfoFromURL(source);
@@ -3050,18 +3056,38 @@ class HCAAudioWorkletHCAPlayer {
             }
             else
                 throw Error();
-            feedByteMax = Math.floor(feedByteMax);
+            // stop all existing and alive players
+            const alivePlayers = existingPlayers.filter((player) => player.isAlive);
+            yield Promise.all(alivePlayers.map((player) => player.stop()));
+            // check whether a reusable player exists
+            const matchedSampleRate = alivePlayers.filter((player) => player.sampleRate == info.format.samplingRate);
+            const found = matchedSampleRate.find((player) => player.channelCount == info.format.channelCount);
+            if (found) {
+                yield found.setSource(actualSource, info, srcBuf, key1, key2);
+                return found; // reuse existing one
+            }
+            // no reusable player found, have to create a new one
+            let feedByteMax = Math.floor(this.feedByteMax);
             if (feedByteMax < info.blockSize)
                 throw new Error();
             feedByteMax -= feedByteMax % info.blockSize;
             const feedBlockCount = feedByteMax / info.blockSize;
-            // create audio context
-            const audioCtx = new AudioContext({
-                latencyHint: "playback",
-                sampleRate: info.format.samplingRate,
-            });
+            // initialize cipher
+            const cipher = this.getCipher(info, key1, key2);
+            // reuse/create audio context
+            let audioCtx;
+            if (matchedSampleRate.length > 0) {
+                audioCtx = matchedSampleRate[0].audioCtx;
+                yield audioCtx.resume();
+            }
+            else {
+                audioCtx = new AudioContext({
+                    latencyHint: "playback",
+                    sampleRate: info.format.samplingRate,
+                });
+                yield audioCtx.audioWorklet.addModule(selfUrl);
+            }
             // create audio worklet node (not yet connected)
-            yield audioCtx.audioWorklet.addModule(selfUrl);
             const options = {
                 numberOfInputs: 0,
                 numberOfOutputs: 1,
@@ -3074,10 +3100,13 @@ class HCAAudioWorkletHCAPlayer {
             const hcaPlayerNode = new AudioWorkletNode(audioCtx, "hca-frame-player", options);
             // create gain node
             const gainNode = audioCtx.createGain();
-            // suspend audio context for now
-            yield audioCtx.suspend();
+            // connect
+            hcaPlayerNode.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
             // create controller object
-            return new HCAAudioWorkletHCAPlayer(selfUrl, audioCtx, hcaPlayerNode, gainNode, feedBlockCount, info, actualSource, srcBuf);
+            const player = new HCAAudioWorkletHCAPlayer(selfUrl, audioCtx, hcaPlayerNode, gainNode, feedBlockCount, info, actualSource, srcBuf, cipher);
+            existingPlayers.push(player);
+            return player;
         });
     }
     _terminate() {
@@ -3115,22 +3144,17 @@ class HCAAudioWorkletHCAPlayer {
             }
         });
     }
-    setDecryptionKey(key1, key2) {
-        if (!this.isAlive)
-            throw new Error("dead");
-        switch (this.info.cipher) {
+    static getCipher(info, key1, key2) {
+        switch (info.cipher) {
             case 0:
                 // not encrypted
-                this.cipher = undefined;
-                break;
+                return undefined;
             case 1:
                 // encrypted with "no key"
-                this.cipher = new HCACipher("none"); // ignore given keys
-                break;
+                return new HCACipher("none"); // ignore given keys
             case 0x38:
                 // encrypted with keys - will yield incorrect waveform if incorrect keys are given!
-                this.cipher = new HCACipher(key1, key2);
-                break;
+                return new HCACipher(key1, key2);
             default:
                 throw new Error("unknown ciph.type");
         }
@@ -3184,11 +3208,8 @@ class HCAAudioWorkletHCAPlayer {
             };
         });
     }
-    setSource(source) {
+    setSource(newSource, newInfo, newBuffer, key1, key2) {
         return __awaiter(this, void 0, void 0, function* () {
-            let newInfo;
-            let newSource;
-            let newBuffer = undefined;
             const initializeCmdItem = { cmd: "initialize", args: [null], hook: {
                     task: (task) => __awaiter(this, void 0, void 0, function* () {
                         if (!this.isAlive)
@@ -3204,23 +3225,6 @@ class HCAAudioWorkletHCAPlayer {
                                 console.error(`error when cancelling previous download.`, e);
                             }
                         }
-                        if (source instanceof Uint8Array) {
-                            newSource = source;
-                            newInfo = new HCAInfo(source);
-                        }
-                        else if (source instanceof URL) {
-                            try {
-                                const result = yield HCAAudioWorkletHCAPlayer.getHCAInfoFromURL(source);
-                                newSource = result.reader;
-                                newInfo = result.info;
-                                newBuffer = result.buffer;
-                            }
-                            catch (e) {
-                                throw e;
-                            }
-                        }
-                        else
-                            throw new Error("invalid source");
                         // sample rate and channel count is immutable,
                         // therefore, the only way to change them is to recreate a new instance.
                         // however, there is a memleak bug in Chromium, that:
@@ -3237,12 +3241,13 @@ class HCAAudioWorkletHCAPlayer {
                         };
                         return new HCATask(task.origin, task.taskID, task.cmd, [newProcOpts], false);
                     }), result: () => __awaiter(this, void 0, void 0, function* () {
-                        yield this._pause(); // initialized, but it's paused, until being requested to start/play (resume)
                         this.totalFedBlockCount = 0;
+                        this.cipher = HCAAudioWorkletHCAPlayer.getCipher(newInfo, key1, key2);
                         this.info = newInfo;
                         this.source = newSource;
                         this.srcBuf = newBuffer;
                         this.hasLoop = newInfo.hasHeader["loop"] ? true : false;
+                        this._initialized = true; // we now have something to play again
                     })
                 } };
             yield this.taskQueue.execMultiCmd([this.stopCmdItem, initializeCmdItem]); // ensure atomicity
@@ -3283,6 +3288,11 @@ class HCAAudioWorkletHCAPlayer {
                 task: (task) => __awaiter(this, void 0, void 0, function* () {
                     if (!this.isAlive)
                         throw new Error("dead");
+                    if (!this._initialized) {
+                        console.warn(`not initialized but still requested to ${toPlay ? "resume" : "pause"}`);
+                        task.isDummy = true;
+                        return task;
+                    }
                     if (this.isPlaying) {
                         if (toPlay)
                             task.isDummy = true; // already resumed, not sending cmd
@@ -3331,9 +3341,11 @@ class HCAAudioWorkletHCAPlayer {
         });
     }
 }
+HCAAudioWorkletHCAPlayer.feedByteMax = 32768;
 // create & control worker
 class HCAWorker {
     constructor(selfUrl) {
+        this.awHcaPlayers = [];
         this.lastTick = 0;
         this.hcaWorker = new Worker(selfUrl);
         this.selfUrl = selfUrl;
@@ -3356,8 +3368,7 @@ class HCAWorker {
         return __awaiter(this, void 0, void 0, function* () {
             if (this.taskQueue.isAlive)
                 yield this.taskQueue.shutdown(forcibly);
-            if (this.awHcaPlayer != null && this.awHcaPlayer.isAlive)
-                yield this.awHcaPlayer.shutdown(forcibly);
+            yield Promise.all(this.awHcaPlayers.map((player) => player.shutdown(forcibly)));
         });
     }
     tick() {
@@ -3438,56 +3449,39 @@ class HCAWorker {
             return yield this.taskQueue.execCmd("decode", [hca, mode, loop, volume]);
         });
     }
-    playWholeHCA(hca, key1, key2, startPlaying = true) {
+    awPlayHCA(hca, key1, key2) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (this.awHcaPlayer == null) {
-                this.awHcaPlayer = yield HCAAudioWorkletHCAPlayer.create(this.selfUrl, hca);
-            }
-            else {
-                yield this.awHcaPlayer.setSource(hca);
-            }
-            this.awHcaPlayer.setDecryptionKey(key1, key2);
-            if (startPlaying)
-                yield this.awHcaPlayer.play();
-        });
-    }
-    playHCAFromURL(url, key1, key2, startPlaying = true) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (typeof url === "string") {
-                if (url === "")
+            if (typeof hca === "string") {
+                if (hca === "")
                     throw new Error("empty URL");
-                url = new URL(url, document.baseURI);
+                hca = new URL(hca, document.baseURI);
             }
-            if (this.awHcaPlayer == null) {
-                this.awHcaPlayer = yield HCAAudioWorkletHCAPlayer.create(this.selfUrl, url);
-            }
-            else {
-                yield this.awHcaPlayer.setSource(url);
-            }
-            this.awHcaPlayer.setDecryptionKey(key1, key2);
-            if (startPlaying)
-                yield this.awHcaPlayer.play();
+            else if (!(hca instanceof Uint8Array) && !(hca instanceof URL))
+                throw new Error("hca must be Uint8Array or URL");
+            yield HCAAudioWorkletHCAPlayer.init(this.selfUrl, this.awHcaPlayers, hca, key1, key2);
         });
     }
-    pausePlaying() {
+    awPause() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (this.awHcaPlayer == null)
-                throw new Error();
-            yield this.awHcaPlayer.pause();
+            const initialized = this.awHcaPlayers.filter((player) => player.initialized);
+            if (initialized.length > 1)
+                throw new Error(`found more than one initialized player`);
+            if (initialized.length == 1)
+                yield initialized[0].pause();
         });
     }
-    resumePlaying() {
+    awResume() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (this.awHcaPlayer == null)
-                throw new Error();
-            yield this.awHcaPlayer.play();
+            const initialized = this.awHcaPlayers.filter((player) => player.initialized);
+            if (initialized.length > 1)
+                throw new Error(`found more than one initialized player`);
+            if (initialized.length == 1)
+                yield initialized[0].play();
         });
     }
-    stopPlaying() {
+    awStop() {
         return __awaiter(this, void 0, void 0, function* () {
-            if (this.awHcaPlayer == null)
-                throw new Error();
-            yield this.awHcaPlayer.stop();
+            yield Promise.all(this.awHcaPlayers.map((player) => player.stop()));
         });
     }
 }

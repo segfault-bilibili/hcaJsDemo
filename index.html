@@ -12,7 +12,7 @@
         Pick a local file: <input type="file" id="localfile" accept=".hca" onchange="buttons.loadfilebtn = this.files.length > 0"><br>
     </form>
     <b><u>Don't forget to</u></b> <button disabled id="loadfilebtn">load picked file</button><br>
-    Or download from URL: <input type="text" spellcheck="false" id="urlinput" value="bgm01_battle06_hca.hca"><br>
+    Or download from URL: <input type="text" spellcheck="false" id="urlinput" value="bgm01_anime02_hca.hca"><br>
     <button id="downloadbtn">download</button><br>
     <hr>
     <h3>Set keys for decryption/encryption</h3>
@@ -464,7 +464,7 @@
             },
             awplaywholehcabtn: async (self) => {
                 try {
-                    await worker.playWholeHCA(hcaFileData.original.data, keys.key1, keys.key2);
+                    await worker.awPlayHCA(hcaFileData.original.data, keys.key1, keys.key2);
                     self.textContent = "Play (successful)";
                 } catch (e) {
                     self.textContent = "Play (failed)";
@@ -473,11 +473,14 @@
                 // let the button bounce
                 self.disabled = false;
                 // next step
-                // TODO pause/rewind/fast-forward etc
+                buttons.awpausebtn = true;
+                buttons.awresumebtn = false;
+                buttons.awstopbtn = true;
+                // TODO rewind/fast-forward etc
             },
             awplayfromurlbtn: async (self) => {
                 try {
-                    await worker.playHCAFromURL(urlinput.value, keys.key1, keys.key2);
+                    await worker.awPlayHCA(urlinput.value, keys.key1, keys.key2);
                     self.textContent = "Play (successful)";
                 } catch (e) {
                     self.textContent = "Play (failed)";
@@ -493,7 +496,7 @@
             },
             awpausebtn: async (self) => {
                 try {
-                    await worker.pausePlaying();
+                    await worker.awPause();
                     self.textContent = "Paused";
                 } catch (e) {
                     self.textContent = "Pause (Error)";
@@ -506,7 +509,7 @@
             },
             awresumebtn: async (self) => {
                 try {
-                    await worker.resumePlaying();
+                    await worker.awResume();
                     self.textContent = "Resumed";
                 } catch (e) {
                     self.textContent = "Resume (Error)";
@@ -519,7 +522,7 @@
             },
             awstopbtn: async (self) => {
                 try {
-                    await worker.stopPlaying();
+                    await worker.awStop();
                     self.textContent = "Stopped";
                 } catch (e) {
                     self.textContent = "Stop (Error)";
