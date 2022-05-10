@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -9,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var _a, _b;
-class HCAInfo {
+export class HCAInfo {
     constructor(hca, changeMask = false, encrypt = false) {
         this.version = "";
         this.dataOffset = 0;
@@ -481,7 +480,7 @@ class HCAUtilFunc {
     }
 }
 HCAUtilFunc.SignedNibbles = [0, 1, 2, 3, 4, 5, 6, 7, -8, -7, -6, -5, -4, -3, -2, -1];
-class HCA {
+export class HCA {
     constructor() {
     }
     static decrypt(hca, key1, key2) {
@@ -3351,10 +3350,10 @@ class HCAAudioWorkletHCAPlayer {
 }
 HCAAudioWorkletHCAPlayer.feedByteMax = 32768;
 // create & control worker
-class HCAWorker {
+export class HCAWorker {
     constructor(selfUrl) {
         this.lastTick = 0;
-        this.hcaWorker = new Worker(selfUrl);
+        this.hcaWorker = new Worker(selfUrl, { type: "module" }); // setting type to "module" is currently bogus in Firefox
         this.selfUrl = selfUrl;
         this.taskQueue = new HCATaskQueue("Main-HCAWorker", (msg, trans) => this.hcaWorker.postMessage(msg, trans), (task) => __awaiter(this, void 0, void 0, function* () {
             switch (task.cmd) {
@@ -3406,7 +3405,11 @@ class HCAWorker {
             // so that HCAAudioWorkletHCAPlayer can only be created after finishing downloading the whole HCA,
             // which obviously defeats the purpose of streaming HCA
             const response = yield fetch(selfUrl.href);
-            const blob = yield response.blob();
+            // Firefox currently does not support ECMAScript modules in Worker,
+            // therefore we must strip all export declarations
+            const origText = yield response.text();
+            const convertedText = origText.replace(/(\n*\s*)export\s+{.*}\s*;*/g, "$1").replace(/(\n*\s*)export\s+/g, "$1");
+            const blob = new Blob([convertedText], { type: "text/javascript" });
             const reader = new FileReader();
             reader.readAsDataURL(blob);
             const dataURI = yield new Promise((res) => {
