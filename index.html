@@ -4189,6 +4189,7 @@ class HCAWorker {
                     case "awresumebtn":
                     case "awpausebtn":
                     case "awstopbtn":
+                        if (exceptBtnID == null) buttons[btnID] = false; // on refresh
                         break; // do not reset
                     default:
                         buttons[btnID] = false;
