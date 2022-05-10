@@ -2901,12 +2901,16 @@ class HCAAudioWorkletHCAPlayer {
                     if (!this.isAlive)
                         throw new Error("dead");
                     if (!this.isPlaying)
-                        yield this._play();
+                        yield this._resume();
                     return task;
                 }),
                 result: () => __awaiter(this, void 0, void 0, function* () {
-                    yield this._pause(); // can now suspend
+                    yield this._suspend(); // can now suspend
                     this._initialized = false; // now we have nothing to play until next setSource
+                    if (this.source != null && !(this.source instanceof Uint8Array)) {
+                        yield this.source.cancel();
+                        delete this.source;
+                    }
                 }),
             }
         };
@@ -3231,14 +3235,14 @@ class HCAAudioWorkletHCAPlayer {
                             throw new Error("sample rate mismatch");
                         if (newInfo.format.channelCount != this.channelCount)
                             throw new Error("channel count mismatch");
-                        yield this._play(); // resume it, so that cmd can then be executed
+                        yield this._resume(); // resume it, so that cmd can then be executed
                         const newProcOpts = {
                             rawHeader: newInfo.getRawHeader(),
                             pullBlockCount: this.feedBlockCount,
                         };
                         return new HCATask(task.origin, task.taskID, task.cmd, [newProcOpts], false);
                     }), result: () => __awaiter(this, void 0, void 0, function* () {
-                        yield this._pause(); // initialized, but it's paused, until being requested to start/play (resume)
+                        yield this._suspend(); // initialized, but it's paused, until being requested to start/play (resume)
                         this.totalFedBlockCount = 0;
                         this.cipher = HCAAudioWorkletHCAPlayer.getCipher(newInfo, key1, key2);
                         this.info = newInfo;
@@ -3252,14 +3256,12 @@ class HCAAudioWorkletHCAPlayer {
         });
     }
     // not supposed to be used directly
-    _play() {
+    _resume() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.isAlive)
                 throw new Error("dead");
             if (this.isPlaying)
                 return;
-            if (this.source == null)
-                throw new Error("nothing to play");
             yield this.audioCtx.resume();
             this.hcaPlayerNode.connect(this.gainNode);
             this.gainNode.connect(this.audioCtx.destination);
@@ -3271,7 +3273,7 @@ class HCAAudioWorkletHCAPlayer {
             }
         });
     }
-    _pause() {
+    _suspend() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.isAlive)
                 throw new Error("dead");
@@ -3300,7 +3302,7 @@ class HCAAudioWorkletHCAPlayer {
                         if (toPlay) {
                             if (!this._initialized)
                                 throw new Error(`not initialized but still attempt to resume`);
-                            yield this._play();
+                            yield this._resume();
                         }
                         else
                             task.isDummy = true; // already paused, not sending cmd
@@ -3309,9 +3311,9 @@ class HCAAudioWorkletHCAPlayer {
                 }),
                 result: () => __awaiter(this, void 0, void 0, function* () {
                     if (toPlay)
-                        yield this._play();
+                        yield this._resume();
                     else
-                        yield this._pause();
+                        yield this._suspend();
                 })
             });
         });
