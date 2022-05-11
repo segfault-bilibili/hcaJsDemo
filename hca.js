@@ -3360,7 +3360,9 @@ export class HCAWorker {
             // workaround for legacy iOS Safari
             if (selfBlob == null || !(selfBlob instanceof Blob))
                 throw e;
-            this.hcaWorker = new Worker(URL.createObjectURL(selfBlob), { type: "module" });
+            const objUrl = URL.createObjectURL(selfBlob);
+            this.hcaWorker = new Worker(objUrl, { type: "module" });
+            URL.revokeObjectURL(objUrl);
         }
         this.selfUrl = selfUrl;
         this.taskQueue = new HCATaskQueue("Main-HCAWorker", (msg, trans) => this.hcaWorker.postMessage(msg, trans), (task) => __awaiter(this, void 0, void 0, function* () {

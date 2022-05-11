@@ -102,6 +102,7 @@
         // local file picker
         const localfile = document.getElementById("localfile");
         const localfileform = document.getElementById("localfileform");
+        // onchange does not work on iOS Safari
         localfile.addEventListener("change", function (ev) {buttons.loadfilebtn = this.files.length > 0;});
         // reset state on refresh
         // https://bugzilla.mozilla.org/show_bug.cgi?id=685657
@@ -407,11 +408,18 @@
                 clearAllData();
                 resetButtonsExcept(self.id);
                 // update data
-                let ab = await file.arrayBuffer();
+                let ab;
+                if (file.arrayBuffer == null) {
+                    let objUrl = URL.createObjectURL(file);
+                    let resp = await fetch(objUrl);
+                    URL.revokeObjectURL(objUrl);
+                    ab = await resp.arrayBuffer();
+                } else {
+                    ab = await file.arrayBuffer();
+                }
                 hcaFileData.original.data = new Uint8Array(ab);
                 self.textContent = "load picked file (successful)";
-                // let the button bounce
-                self.disabled = false;
+                // no need to let the button bounce
                 // next step
                 buttons.awloadwholehcabtn = true;
                 buttons.infobtn = true;
