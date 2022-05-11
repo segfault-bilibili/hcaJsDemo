@@ -3418,7 +3418,7 @@ export class HCAWorker {
             // Firefox currently does not support ECMAScript modules in Worker,
             // therefore we must strip all export declarations
             const origText = yield response.text();
-            const convertedText = origText.replace(/(\n*\s*)export\s+{.*}\s*;*/g, "$1").replace(/(\n*\s*)export\s+/g, "$1");
+            const convertedText = origText.replace(/^(\s*)export\s+((\{.*?\}\s*;{0,1})|())/mg, "$1");
             const blob = new Blob([convertedText], { type: "text/javascript" });
             const reader = new FileReader();
             reader.readAsDataURL(blob);
