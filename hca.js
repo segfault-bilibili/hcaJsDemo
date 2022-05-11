@@ -3351,9 +3351,17 @@ class HCAAudioWorkletHCAPlayer {
 HCAAudioWorkletHCAPlayer.feedByteMax = 32768;
 // create & control worker
 export class HCAWorker {
-    constructor(selfUrl) {
+    constructor(selfUrl, selfBlob) {
         this.lastTick = 0;
-        this.hcaWorker = new Worker(selfUrl, { type: "module" }); // setting type to "module" is currently bogus in Firefox
+        try {
+            this.hcaWorker = new Worker(selfUrl, { type: "module" }); // setting type to "module" is currently bogus in Firefox
+        }
+        catch (e) {
+            // workaround for legacy iOS Safari
+            if (selfBlob == null || !(selfBlob instanceof Blob))
+                throw e;
+            this.hcaWorker = new Worker(URL.createObjectURL(selfBlob), { type: "module" });
+        }
         this.selfUrl = selfUrl;
         this.taskQueue = new HCATaskQueue("Main-HCAWorker", (msg, trans) => this.hcaWorker.postMessage(msg, trans), (task) => __awaiter(this, void 0, void 0, function* () {
             switch (task.cmd) {
@@ -3418,7 +3426,7 @@ export class HCAWorker {
                 };
             });
             selfUrl = new URL(dataURI, document.baseURI);
-            return new HCAWorker(selfUrl);
+            return new HCAWorker(selfUrl, blob);
         });
     }
     // commands
