@@ -3067,7 +3067,7 @@ class HCAAudioWorkletHCAPlayer {
             const cipher = this.getCipher(info, key1, key2);
             // create audio context
             const audioCtx = new AudioContext({
-                //latencyHint: "playback", // FIXME "playback" seems to glitch if switched to background in Android
+                latencyHint: "playback",
                 sampleRate: info.format.samplingRate,
             });
             // create audio worklet node (not yet connected)
