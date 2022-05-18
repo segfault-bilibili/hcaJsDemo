@@ -3,6 +3,7 @@
 <head></head>
 <body>
     <h1>HCA decoder demo</h1>
+    <a href="https://github.com/y2361547758/hca.js">GitHub repo</a>
     <hr>
     <button disabled id="startworkerbtn">start background worker</button><br>
     <button disabled id="shutdownbtn">shutdown background worker</button><br>
@@ -12,6 +13,7 @@
     <form id="localfileform">
         Or pick a local file: <input type="file" id="localfile" accept=".hca,application/octet-stream"><br>
     </form>
+    <button id="cannotpickbtn">cannot pick? try workaround</button><br>
     <b><u>Don't forget to</u></b> <button disabled id="loadfilebtn">load picked file</button><br>
     Or download from URL: <input type="text" spellcheck="false" id="urlinput" value="bgm01_anime02_hca.hca"><br>
     <button id="downloadbtn">download</button><br>
@@ -107,6 +109,10 @@
         // reset state on refresh
         // https://bugzilla.mozilla.org/show_bug.cgi?id=685657
         localfileform.reset();
+        // workaround iOS Safari file picker
+        document.getElementById("cannotpickbtn").onclick = function () {
+            localfile.accept = "";
+        }
 
         // input HCA URL
         const urlinput = document.getElementById("urlinput");
