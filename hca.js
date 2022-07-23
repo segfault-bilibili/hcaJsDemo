@@ -569,6 +569,7 @@ export class HCA {
         // calculate in-WAV size
         let inWavSize = info.calcInWavSize(mode);
         // decode blocks (frames)
+        let failedBlocks = [], lastError = undefined;
         for (let i = 0, offset = 0; i < info.format.blockCount; i++) {
             let lastDecodedSamples = i * HCAFrame.SamplesPerFrame;
             let currentDecodedSamples = lastDecodedSamples + HCAFrame.SamplesPerFrame;
@@ -577,7 +578,14 @@ export class HCA {
             }
             let startOffset = info.dataOffset + info.blockSize * i;
             let block = hca.subarray(startOffset, startOffset + info.blockSize);
-            this.decodeBlock(frame, block);
+            try {
+                this.decodeBlock(frame, block);
+            }
+            catch (e) {
+                failedBlocks.push(i);
+                lastError = e;
+                frame = new HCAFrame(info);
+            }
             let wavebuff;
             if (lastDecodedSamples < info.startAtSample || currentDecodedSamples > info.endAtSample) {
                 // crossing startAtSample/endAtSample, skip/drop specified bytes
@@ -598,6 +606,9 @@ export class HCA {
                 wavebuff = this.writeToPCM(frame, mode, volume, dataPart, offset);
             }
             offset += wavebuff.byteLength;
+        }
+        if (failedBlocks.length > 0) {
+            console.error(`error decoding following blocks, filled zero`, failedBlocks, lastError);
         }
         // decoding done, then just copy looping part
         if (info.hasHeader["loop"] && loop) {
@@ -2602,6 +2613,9 @@ if (typeof document === "undefined") {
             constructor(procOpts) {
                 this.isPlaying = false;
                 this.defaultPullBlockCount = 128;
+                this.failedBlocks = [];
+                this.printErrorCountDownFrom = 256;
+                this.printErrorCountDown = this.printErrorCountDownFrom;
                 this.totalPulledBlockCount = 0;
                 this.isPulling = false;
                 this._isStalling = false;
@@ -2771,6 +2785,14 @@ if (typeof document === "undefined") {
                     }
                     return true; // wait for new source or resume
                 }
+                if (this.ctx.failedBlocks.length > 0) {
+                    if (this.ctx.failedBlocks.length >= 64 || --this.ctx.printErrorCountDown <= 0) {
+                        console.error(`error decoding following blocks`, this.ctx.failedBlocks, this.ctx.lastError);
+                        this.ctx.failedBlocks = [];
+                        this.ctx.lastError = undefined;
+                        this.ctx.printErrorCountDown = this.ctx.printErrorCountDownFrom;
+                    }
+                }
                 const output = outputs[0];
                 const renderQuantumSize = output[0].length;
                 const samplesPerBlock = HCAFrame.SamplesPerFrame;
@@ -2819,7 +2841,8 @@ if (typeof document === "undefined") {
                             HCA.decodeBlock(this.ctx.frame, encoded.subarray(start, end));
                         }
                         catch (e) {
-                            console.error(`error decoding block ${endBlockIndex}, filling zero data...`, e);
+                            this.ctx.failedBlocks.push(endBlockIndex);
+                            this.ctx.lastError = e;
                             this.ctx.frame.Channels.forEach((c) => { c.PcmFloat.forEach((sf) => sf.fill(0)); });
                         }
                         this.writeToDecodedBuffer(this.ctx.frame, this.ctx.decoded);
@@ -3067,7 +3090,7 @@ class HCAAudioWorkletHCAPlayer {
             const cipher = this.getCipher(info, key1, key2);
             // create audio context
             const audioCtx = new AudioContext({
-                latencyHint: "playback",
+                //latencyHint: "playback", // FIXME "playback" seems to glitch if switched to background in Android
                 sampleRate: info.format.samplingRate,
             });
             // create audio worklet node (not yet connected)
