@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>
+    <button onclick="loop()">Loop bgm22_battle01_hca_loop.wav</button>
+    <br>
+    <button onclick="loop(true)">Loop bgm22_battle01_hca_loop.wav (HTML5, failed to be gapless)</button>
+    <script src="https://cdn.jsdelivr.net/npm/howler@2.2.3/dist/howler.min.js"></script>
+    <script>
+        var loopedSound = null;
+        function loop(html5) {
+            if (loopedSound != null) loopedSound.unload();
+            loopedSound = new Howl({src:["bgm22_battle01_hca_loop.wav"],loop:true,html5:html5,autoplay:true});
+        }
+    </script>
+</body>
+</html>
