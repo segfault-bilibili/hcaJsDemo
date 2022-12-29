@@ -33,15 +33,19 @@
             console.log("started background worker");
         }
 
-        let response = await fetch("bgm22_battle01_hca.hca");
-        let hca = new Uint8Array(await response.arrayBuffer());
-        let decrypted = await worker.decrypt(hca, 0x01395C51, 0x00000000);
+        try {
+            let response = await fetch("bgm22_battle01_hca.hca");
+            let hca = new Uint8Array(await response.arrayBuffer());
+            let decrypted = await worker.decrypt(hca, 0x01395C51, 0x00000000);
 
-        let newPlayer = await HCAWebAudioLoopPlayer.create(decrypted, worker);
-        if (webAudioLoopPlayer != null) await webAudioLoopPlayer.stop();
-        webAudioLoopPlayer = newPlayer;
+            let newPlayer = await HCAWebAudioLoopPlayer.create(decrypted, worker);
+            if (webAudioLoopPlayer != null) await webAudioLoopPlayer.stop();
+            webAudioLoopPlayer = newPlayer;
 
-        webaudioplaybtn.disabled = false;
+            webaudioplaybtn.disabled = false;
+        } catch (e) {
+            alert(e, e.stack);
+        }
 
         webaudioplaybtn.addEventListener("click", (ev) => {
             if (webAudioLoopPlayer != null) webAudioLoopPlayer.play();
