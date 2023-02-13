@@ -3915,7 +3915,14 @@ export class HCAWorker {
                 this.awHcaPlayer = yield HCAAudioWorkletHCAPlayer.create(this.selfUrl, hca, key1, key2, subkey);
             }
             else {
-                yield this.awHcaPlayer.setSource(hca, key1, key2, subkey);
+                try {
+                    yield this.awHcaPlayer.setSource(hca, key1, key2, subkey);
+                }
+                catch (e) {
+                    console.error(`awHcaPlayer.setSource failed, attempt recreate player instance`, e);
+                    // FIXME memleak
+                    this.awHcaPlayer = yield HCAAudioWorkletHCAPlayer.create(this.selfUrl, hca, key1, key2, subkey);
+                }
             }
         });
     }
