@@ -42,6 +42,8 @@ export class HCAInfo {
             sub: p.getUint8(5)
         };
         this.version = version.main + '.' + version.sub;
+        this.versionMajor = version.main;
+        this.versionMinor = version.sub;
         this.dataOffset = p.getUint16(6);
         // verify checksum
         HCACrc16.verify(hca, this.dataOffset - 2);
@@ -342,6 +344,8 @@ export class HCAInfo {
     }
     constructor(hca, changeMask = false, encrypt = false) {
         this.version = "";
+        this.versionMajor = 2;
+        this.versionMinor = 0;
         this.dataOffset = 0;
         this.format = {
             channelCount: 0,
@@ -495,14 +499,18 @@ HCAUtilFunc.SignedNibbles = [0, 1, 2, 3, 4, 5, 6, 7, -8, -7, -6, -5, -4, -3, -2,
 export class HCA {
     constructor() {
     }
-    static decrypt(hca, key1, key2) {
-        return this.decryptOrEncrypt(hca, false, key1, key2);
+    static decrypt(hca, key1, key2, subkey) {
+        return this.decryptOrEncrypt(hca, false, key1, key2, subkey);
     }
-    static encrypt(hca, key1, key2) {
-        return this.decryptOrEncrypt(hca, true, key1, key2);
+    static encrypt(hca, key1, key2, subkey) {
+        return this.decryptOrEncrypt(hca, true, key1, key2, subkey);
     }
-    static decryptOrEncrypt(hca, encrypt, key1, key2) {
+    static decryptOrEncrypt(hca, encrypt, key1, key2, subkey) {
         // in-place decryption/encryption
+        // handle subkey
+        let mixed = HCACipher.mixWithSubkey(key1, key2, subkey);
+        key1 = mixed.key1;
+        key2 = mixed.key2;
         // parse header
         let info = new HCAInfo(hca); // throws "Not a HCA file" if mismatch
         if (!encrypt && !info.hasHeader["ciph"]) {
@@ -553,6 +561,73 @@ export class HCA {
         new DataView(newCipherData.buffer).setUint16(0, newCipherType);
         info.modify(hca, "ciph", newCipherData);
         return hca;
+    }
+    static findKey(hca, givenKeyList, subkey, threshold = 0.5, depth = 1024) {
+        let keyList, unmixedKeyList;
+        if (givenKeyList == null) {
+            keyList = HCAKnownKeys;
+        }
+        else {
+            keyList = givenKeyList.map((keys) => [HCACipher.parseKey(keys[0]), HCACipher.parseKey(keys[1])]);
+            HCAKnownKeys.forEach((keys) => keyList === null || keyList === void 0 ? void 0 : keyList.push(keys));
+        }
+        unmixedKeyList = keyList.slice();
+        if (subkey != null) {
+            // handle subkey
+            keyList = keyList.map((keys) => {
+                let mixed = HCACipher.mixWithSubkey(keys[0], keys[1], subkey);
+                return [mixed.key1, mixed.key2];
+            });
+        }
+        // parse header
+        const info = new HCAInfo(hca); // throws "Not a HCA file" if mismatch
+        const frame = new HCAFrame(info);
+        const scores = keyList.map(() => 0);
+        let cipher;
+        const testKey = (block, keys) => {
+            if (cipher == null)
+                cipher = new HCACipher(keys[0], keys[1]);
+            // decrypt block
+            block = block.slice();
+            cipher.mask(block, 0, info.blockSize - 2);
+            // test if the key is correct
+            let reader = new HCABitReader(block);
+            let result = false;
+            try {
+                result = HCAPacking.UnpackFrame(frame, reader);
+            }
+            catch (e) { }
+            if (!result) {
+                cipher = undefined;
+            }
+            return result;
+        };
+        let testedBlockCount = 0;
+        for (let i = 0, lastFound = -1; i < info.format.blockCount && i < depth; i++) {
+            let ftell = info.dataOffset + info.blockSize * i;
+            let block = hca.subarray(ftell, ftell + info.blockSize);
+            let found = -1;
+            if (lastFound != -1) {
+                // test last found key
+                if (testKey(block, keyList[lastFound]))
+                    found = lastFound;
+            }
+            if (found == -1) {
+                // last found key does not match, test others
+                found = keyList.findIndex((keys, index) => index == lastFound ? false : testKey(block, keys));
+            }
+            if (found != -1) {
+                lastFound = found;
+                scores[found]++;
+            }
+            testedBlockCount++;
+        }
+        let bestScore = 0, bestIndex = -1;
+        scores.forEach((s, i) => s > bestScore && (bestScore = s, bestIndex = i));
+        if (bestIndex == -1 || bestScore / testedBlockCount < threshold)
+            return; // cannot found valid key
+        else
+            return unmixedKeyList[bestIndex];
     }
     static decode(hca, mode = 32, loop = 0, volume = 1.0) {
         switch (mode) {
@@ -1171,7 +1246,8 @@ var HCAChannelType;
 class HCADecoder {
     static DecodeFrame(audio, frame) {
         let reader = new HCABitReader(audio);
-        HCAPacking.UnpackFrame(frame, reader);
+        if (!HCAPacking.UnpackFrame(frame, reader))
+            throw new Error(`UnpackFrame failed`);
         this.DequantizeFrame(frame);
         this.RestoreMissingBands(frame);
         this.RunImdct(frame);
@@ -1282,15 +1358,19 @@ class HCAPacking {
         }
         this.WriteChecksum(writer, outBuffer);
     }
-    static CalculateResolution(scaleFactor, noiseLevel) {
+    static CalculateResolution(scaleFactor, noiseLevel, versionMajor) {
         if (scaleFactor == 0) {
             return 0;
         }
         let curvePosition = noiseLevel - (5 * scaleFactor >> 1) + 2;
-        curvePosition = HCAUtilFunc.Clamp(curvePosition, 0, 58);
+        //https://github.com/vgmstream/vgmstream/blob/4eecdada9a03a73af0c7c17f5cd6e08518fd7e3f/src/coding/hca_decoder_clhca.c#L1450
+        //FIXME hca2.0 decoding breaks if conditional (ternary) operator is removed
+        //curvePosition = HCAUtilFunc.Clamp(curvePosition, 0, 67);
+        curvePosition = HCAUtilFunc.Clamp(curvePosition, 0, versionMajor <= 2 ? 58 : 67);
         return HCATables.ScaleToResolutionCurve[curvePosition];
     }
     static UnpackFrameHeader(frame, reader) {
+        let hca = frame.Hca;
         let syncWord = reader.ReadInt(16);
         if (syncWord != 0xffff) {
             throw new Error("Invalid frame header");
@@ -1299,40 +1379,112 @@ class HCAPacking {
         frame.AcceptableNoiseLevel = reader.ReadInt(9);
         frame.EvaluationBoundary = reader.ReadInt(7);
         for (let channel of frame.Channels) {
-            if (!this.ReadScaleFactors(channel, reader))
+            if (!this.ReadScaleFactors(channel, reader, hca.HfrGroupCount, hca.versionMajor))
                 return false;
+            // added clamp
+            //https://github.com/vgmstream/vgmstream/blob/4eecdada9a03a73af0c7c17f5cd6e08518fd7e3f/src/coding/hca_decoder_clhca.c#L1462
             for (let i = 0; i < frame.EvaluationBoundary; i++) {
-                channel.Resolution[i] = this.CalculateResolution(channel.ScaleFactors[i], athCurve[i] + frame.AcceptableNoiseLevel - 1);
+                let newResolution = this.CalculateResolution(channel.ScaleFactors[i], athCurve[i] + frame.AcceptableNoiseLevel - 1, hca.versionMajor);
+                if (hca.versionMajor > 2)
+                    newResolution = HCAUtilFunc.Clamp(newResolution, hca.compDec.MinResolution, hca.compDec.MaxResolution);
+                channel.Resolution[i] = newResolution;
             }
             for (let i = frame.EvaluationBoundary; i < channel.CodedScaleFactorCount; i++) {
-                channel.Resolution[i] = this.CalculateResolution(channel.ScaleFactors[i], athCurve[i] + frame.AcceptableNoiseLevel);
+                let newResolution = this.CalculateResolution(channel.ScaleFactors[i], athCurve[i] + frame.AcceptableNoiseLevel, hca.versionMajor);
+                if (hca.versionMajor > 2)
+                    newResolution = HCAUtilFunc.Clamp(newResolution, hca.compDec.MinResolution, hca.compDec.MaxResolution);
+                channel.Resolution[i] = newResolution;
             }
             if (channel.Type == HCAChannelType.StereoSecondary) {
-                this.ReadIntensity(reader, channel.Intensity);
+                this.ReadIntensity(reader, channel.Intensity, hca.versionMajor);
             }
             else if (frame.Hca.HfrGroupCount > 0) {
-                this.ReadHfrScaleFactors(reader, frame.Hca.HfrGroupCount, channel.HfrScales);
+                if (hca.versionMajor <= 2)
+                    this.ReadHfrScaleFactors(reader, frame.Hca.HfrGroupCount, channel.HfrScales);
+                // v3.0 uses values derived in ReadScaleFactors
             }
         }
         return true;
     }
-    static ReadScaleFactors(channel, reader) {
+    static ReadScaleFactors(channel, reader, hfrGroupCount, versionMajor) {
         channel.ScaleFactorDeltaBits = reader.ReadInt(3);
         if (channel.ScaleFactorDeltaBits == 0) {
             channel.ScaleFactors.fill(0, 0, channel.ScaleFactors.length);
             return true;
         }
+        // added in v3.0
+        // https://github.com/vgmstream/vgmstream/blob/4eecdada9a03a73af0c7c17f5cd6e08518fd7e3f/src/coding/hca_decoder_clhca.c#L1287
+        let extraCodedScaleFactorCount;
+        let codedScaleFactorCount;
+        if (channel.Type == HCAChannelType.StereoSecondary || hfrGroupCount <= 0 || versionMajor <= 2) {
+            extraCodedScaleFactorCount = 0;
+            codedScaleFactorCount = channel.CodedScaleFactorCount;
+        }
+        else {
+            extraCodedScaleFactorCount = hfrGroupCount;
+            codedScaleFactorCount = channel.CodedScaleFactorCount + extraCodedScaleFactorCount;
+            // just in case
+            if (codedScaleFactorCount > HCAFrame.SamplesPerSubFrame)
+                throw new Error(`codedScaleFactorCount > HCAFrame.SamplesPerSubFrame`);
+        }
         if (channel.ScaleFactorDeltaBits >= 6) {
-            for (let i = 0; i < channel.CodedScaleFactorCount; i++) {
+            for (let i = 0; i < codedScaleFactorCount; i++) {
                 channel.ScaleFactors[i] = reader.ReadInt(6);
             }
             return true;
         }
-        return this.DeltaDecode(reader, channel.ScaleFactorDeltaBits, 6, channel.CodedScaleFactorCount, channel.ScaleFactors);
+        let result = this.DeltaDecode(reader, channel.ScaleFactorDeltaBits, 6, codedScaleFactorCount, channel.ScaleFactors);
+        if (!result)
+            return result;
+        // set derived HFR scales for v3.0
+        //FIXME UNTESTED
+        for (let i = 0; i < extraCodedScaleFactorCount; i++) {
+            channel.HfrScales[codedScaleFactorCount - 1 - i] = channel.ScaleFactors[codedScaleFactorCount - i];
+        }
+        return result;
     }
-    static ReadIntensity(reader, intensity) {
-        for (let i = 0; i < HCAFrame.SubframesPerFrame; i++) {
-            intensity[i] = reader.ReadInt(4);
+    static ReadIntensity(reader, intensity, versionMajor) {
+        if (versionMajor <= 2) {
+            for (let i = 0; i < HCAFrame.SubframesPerFrame; i++) {
+                intensity[i] = reader.ReadInt(4);
+            }
+        }
+        else {
+            //https://github.com/vgmstream/vgmstream/blob/4eecdada9a03a73af0c7c17f5cd6e08518fd7e3f/src/coding/hca_decoder_clhca.c#L1374
+            let value = reader.ReadInt(4);
+            let delta_bits;
+            if (value < 15) {
+                delta_bits = reader.ReadInt(2); /* +1 */
+                intensity[0] = value;
+                if (delta_bits == 3) { /* 3+1 = 4b */
+                    /* fixed intensities */
+                    for (let i = 1; i < HCAFrame.SubframesPerFrame; i++) {
+                        intensity[i] = reader.ReadInt(4);
+                    }
+                }
+                else {
+                    /* delta intensities */
+                    let bmax = (2 << delta_bits) - 1;
+                    let bits = delta_bits + 1;
+                    for (let i = 1; i < HCAFrame.SubframesPerFrame; i++) {
+                        let delta = reader.ReadInt(bits);
+                        if (delta == bmax) {
+                            value = reader.ReadInt(4); /* encoded */
+                        }
+                        else {
+                            value = value - (bmax >> 1) + delta; /* differential */
+                            if (value > 15) //todo check
+                                throw new Error(`value > 15`); /* not done in lib */
+                        }
+                        intensity[i] = value;
+                    }
+                }
+            }
+            else {
+                for (let i = 0; i < HCAFrame.SubframesPerFrame; i++) {
+                    intensity[i] = 7;
+                }
+            }
         }
     }
     static ReadHfrScaleFactors(reader, groupCount, hfrScale) {
@@ -1376,6 +1528,8 @@ class HCAPacking {
                 if (value < 0 || value > maxValue) {
                     return false;
                 }
+                // https://github.com/vgmstream/vgmstream/blob/4eecdada9a03a73af0c7c17f5cd6e08518fd7e3f/src/coding/hca_decoder_clhca.c#L1327
+                //value &= 0x3F; // v3.0 lib
                 output[i] = value;
             }
             else {
@@ -1743,7 +1897,8 @@ HCATables.ScaleToResolutionCurve = new Uint8Array([
     0x0F, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0E, 0x0D, 0x0D, 0x0D, 0x0D, 0x0D, 0x0D, 0x0C, 0x0C, 0x0C,
     0x0C, 0x0C, 0x0C, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B, 0x0B, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A, 0x0A,
     0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x07, 0x06, 0x06, 0x05,
-    0x04, 0x04, 0x04, 0x03, 0x03, 0x03, 0x02, 0x02, 0x02, 0x02, 0x01
+    0x04, 0x04, 0x04, 0x03, 0x03, 0x03, 0x02, 0x02, 0x02, 0x02, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+    0x01, 0x01, 0x01, 0x00
 ]);
 HCATables.AthCurve = new Uint8Array([
     0x78, 0x5F, 0x56, 0x51, 0x4E, 0x4C, 0x4B, 0x49, 0x48, 0x48, 0x47, 0x46, 0x46, 0x45, 0x45, 0x45,
@@ -2010,6 +2165,52 @@ HCACrc16._v = new Uint16Array([
     0x8243, 0x0246, 0x024C, 0x8249, 0x0258, 0x825D, 0x8257, 0x0252, 0x0270, 0x8275, 0x827F, 0x027A, 0x826B, 0x026E, 0x0264, 0x8261,
     0x0220, 0x8225, 0x822F, 0x022A, 0x823B, 0x023E, 0x0234, 0x8231, 0x8213, 0x0216, 0x021C, 0x8219, 0x0208, 0x820D, 0x8207, 0x0202
 ]);
+const HCAKnownKeys = [
+    // [lower 32 bits, higher 32 bits]
+    // eg. 6615518E8ECED447 => [0x8ECED447, 0x6615518E]
+    // source: https://github.com/Thealexbarney/VGAudio/blob/master/docs/audio-formats/hca/encryption-keys.md
+    [0x000004C8, 0x00000000],
+    [0x00000978, 0x00000000],
+    [0x000022CE, 0x00000000],
+    [0x00003039, 0x00000000],
+    [0x001D149A, 0x00000000],
+    [0x009134FC, 0x00000000],
+    [0x012C9A53, 0x00000000],
+    [0x012EBCCA, 0x00000000],
+    [0x012FCFDF, 0x00000000],
+    [0x01395C51, 0x00000000],
+    [0x0E62BEF0, 0x00000000],
+    [0x0E88473C, 0x00000000],
+    [0x49913556, 0x00000000],
+    [0x77EDA13A, 0x00000000],
+    [0x77EDF21C, 0x00000000],
+    [0x7235CB29, 0x0000000B],
+    [0x222AAA84, 0x00000497],
+    [0xA6AD6125, 0x00001B85],
+    [0xF27E3B22, 0x00003657],
+    [0x97978A96, 0x0000968A],
+    [0x95356C72, 0x0002354E],
+    [0xBC731A85, 0x0002B875],
+    [0x0DC57F48, 0x0011DCDD],
+    [0x1024ADE9, 0x00189DFB],
+    [0x634B5F07, 0x002055C8],
+    [0xA11CCFB0, 0x00688884],
+    [0x8D0C10FD, 0x00A06A0B],
+    [0xCC554639, 0x00DBE1AB],
+    [0x5990FB5E, 0x02051AF2],
+    [0xF5816A2A, 0x29AFE911],
+    [0x83653699, 0x438BF1F8],
+    [0xB8E6C6D2, 0x43E4EA62],
+    [0xC3091366, 0x7CEC81F7],
+    [0x92EBF464, 0x7E896318],
+    [0x30DBE1AB, 0xCC554639],
+    [0xE0748978, 0xCF222F1F],
+    [0x343D0000, 0xDB5B61B8],
+    [0xAB414BA1, 0xFDAE531A],
+    [0xFFFFFFFF, 0xFFFFFFFF],
+    // source: https://github.com/vgmstream/vgmstream/blob/36f4dfeab41adf8f8ff08477dc062f8c76b003d8/src/meta/hca_keys.h#L1059
+    [0x8ECED447, 0x6615518E], // Heaven Burns Red (Android)
+];
 class HCACipher {
     init1() {
         for (let i = 1, v = 0; i < 0xFF; i++) {
@@ -2022,8 +2223,8 @@ class HCACipher {
         this._table[0xFF] = 0xFF;
     }
     init56() {
-        let key1 = this.getKey1();
-        let key2 = this.getKey2();
+        let key1 = this.dv1.getUint32(0, true);
+        let key2 = this.dv2.getUint32(0, true);
         if (!key1)
             key2--;
         key1--;
@@ -2094,29 +2295,60 @@ class HCACipher {
     getEncrypt() {
         return this.encrypt;
     }
-    getKey1() {
-        return this.dv1.getUint32(0, true);
-    }
-    getKey2() {
-        return this.dv2.getUint32(0, true);
-    }
     getBytesOfTwoKeys() {
         let buf = new Uint8Array(8);
         buf.set(new Uint8Array(this.key1buf), 0);
         buf.set(new Uint8Array(this.key2buf), 4);
         return buf;
     }
-    setKey1(key) {
-        this.dv1.setUint32(0, key, true);
-        this.init56();
-        this.cipherType = 0x38;
-        return this;
+    static bigUintMultiplyLE(dv, factor) {
+        const result = new DataView(new ArrayBuffer(dv.byteLength + 4));
+        factor = Math.trunc(factor);
+        Array.from({ length: dv.byteLength }, (_, i) => factor * dv.getUint8(i))
+            .forEach((v, i) => {
+            v += result.getUint32(i, true);
+            result.setUint32(i, v, true);
+            v -= result.getUint32(i, true);
+            if (v > 0) {
+                v /= 0x100000000;
+                for (let j = i + 4; j < result.byteLength; j++) {
+                    v += result.getUint8(j);
+                    result.setUint8(j, v);
+                    v -= result.getUint8(j);
+                    if (v > 0)
+                        v /= 0x100;
+                    else
+                        break;
+                }
+            }
+        });
+        return result;
     }
-    setKey2(key) {
-        this.dv2.setUint32(0, key, true);
-        this.init56();
-        this.cipherType = 0x38;
-        return this;
+    static mixWithSubkey(key1, key2, subkey) {
+        // https://github.com/vgmstream/vgmstream/blob/84cfeaf993982b4245ce7593dcbb6816c5aee8bc/src/coding/hca_decoder.c#L313
+        /*
+            if (subkey) {
+                keycode = keycode * ( ((uint64_t)subkey << 16u) | ((uint16_t)~subkey + 2u) );
+            }
+        */
+        if (subkey == null)
+            return { key1: key1, key2: key2 };
+        key1 = HCACipher.parseKey(key1);
+        key2 = HCACipher.parseKey(key2);
+        subkey = HCACipher.parseKey(subkey);
+        const keydv = new DataView(new ArrayBuffer(8));
+        keydv.setUint32(0, key1, true);
+        keydv.setUint32(4, key2, true);
+        const subkeydv = new DataView(new ArrayBuffer(4));
+        subkeydv.setUint16(2, subkey, true);
+        if (subkeydv.getUint16(2) == 0)
+            return { key1: key1, key2: key2 }; //unchanged
+        subkeydv.setUint16(0, ~subkeydv.getUint16(2, true) + 2, true);
+        subkey = subkeydv.getUint32(0, true);
+        const mixedkeydv = this.bigUintMultiplyLE(keydv, subkey);
+        key1 = mixedkeydv.getUint32(0, true);
+        key2 = mixedkeydv.getUint32(4, true);
+        return { key1: key1, key2: key2 };
     }
     setKeys(key1, key2) {
         this.dv1.setUint32(0, key1, true);
@@ -2204,6 +2436,57 @@ class HCACipher {
 }
 HCACipher.defKey1 = 0x01395C51;
 HCACipher.defKey2 = 0x00000000;
+// https://github.com/vgmstream/vgmstream/blob/4eecdada9a03a73af0c7c17f5cd6e08518fd7e3f/src/meta/awb.c#L13
+export class AWBArchive {
+    static isAWB(file) {
+        const dv = new DataView(file.buffer, file.byteOffset, file.byteLength);
+        const magic = 0x41465332; // "AFS2" in Uint32BE
+        return dv.getUint32(0, false) == magic;
+    }
+    constructor(awb) {
+        if (!AWBArchive.isAWB(awb))
+            throw new Error(`not AWB archive`);
+        const dv = new DataView(awb.buffer, awb.byteOffset, awb.byteLength);
+        this.version = dv.getUint8(0x04);
+        this.offsetSize = dv.getUint8(0x05);
+        this.waveIdAlignment = dv.getUint16(0x06, true);
+        this.totalSubsongs = dv.getInt32(0x08, true);
+        this.offsetAlignment = dv.getUint16(0x0c, true);
+        this.subkey = dv.getUint16(0x0e, true);
+        let ftell = 0x10;
+        this.hcaFiles = Array.from({ length: this.totalSubsongs }, () => {
+            const offset = ftell;
+            ftell += this.waveIdAlignment;
+            return { waveID: dv.getUint16(offset, true) };
+        }).map((o) => {
+            const offset = ftell;
+            ftell += this.offsetSize * 2;
+            switch (this.offsetSize) {
+                case 0x04:
+                    return {
+                        waveID: o.waveID,
+                        offset: dv.getUint32(offset, true),
+                        next: dv.getUint32(offset + this.offsetSize, true),
+                    };
+                case 0x02:
+                    return {
+                        waveID: o.waveID,
+                        offset: dv.getUint16(offset, true),
+                        next: dv.getUint16(offset + this.offsetSize, true),
+                    };
+                default:
+                    throw new Error(`AWB: unknown offset size`);
+            }
+        }).map((o) => {
+            // offset are absolute but sometimes misaligned (specially first that just points to offset table end)
+            o.offset += (o.offset % this.offsetAlignment) ?
+                this.offsetAlignment - (o.offset % this.offsetAlignment) : 0;
+            o.next += (o.next % this.offsetAlignment) && o.next < awb.byteLength ?
+                this.offsetAlignment - (o.next % this.offsetAlignment) : 0;
+            return { waveID: o.waveID, file: awb.subarray(o.offset, o.next) };
+        });
+    }
+}
 const suspendAudioCtxIfUnlocked = (audioCtx) => __awaiter(void 0, void 0, void 0, function* () {
     // suspend audio context for now
     // in apple webkit it's already suspended & calling suspend yet again will block
@@ -3014,6 +3297,8 @@ if (typeof document === "undefined") {
                     return HCAInfo.fixHeaderChecksum.apply(HCAInfo, task.args);
                 case "fixChecksum":
                     return HCA.fixChecksum.apply(HCA, task.args);
+                case "findKey":
+                    return HCA.findKey.apply(HCA, task.args);
                 case "decrypt":
                     return HCA.decrypt.apply(HCA, task.args);
                 case "encrypt":
@@ -3134,7 +3419,7 @@ class HCAAudioWorkletHCAPlayer {
             }
         });
     }
-    static create(selfUrl, source, key1, key2) {
+    static create(selfUrl, source, key1, key2, subkey) {
         return __awaiter(this, void 0, void 0, function* () {
             if (!(selfUrl instanceof URL))
                 throw new Error();
@@ -3161,7 +3446,7 @@ class HCAAudioWorkletHCAPlayer {
             feedByteMax -= feedByteMax % info.blockSize;
             const feedBlockCount = feedByteMax / info.blockSize;
             // initialize cipher
-            const cipher = this.getCipher(info, key1, key2);
+            const cipher = this.getCipher(info, key1, key2, subkey);
             // create audio context
             const audioCtx = new AudioContext({
                 //latencyHint: "playback", // FIXME "playback" seems to glitch if switched to background in Android
@@ -3258,7 +3543,11 @@ class HCAAudioWorkletHCAPlayer {
         this.channelCount = info.format.channelCount;
         this.hasLoop = info.hasHeader["loop"] ? true : false;
     }
-    static getCipher(info, key1, key2) {
+    static getCipher(info, key1, key2, subkey) {
+        // handle subkey
+        let mixed = HCACipher.mixWithSubkey(key1, key2, subkey);
+        key1 = mixed.key1;
+        key2 = mixed.key2;
         switch (info.cipher) {
             case 0:
                 // not encrypted
@@ -3322,7 +3611,7 @@ class HCAAudioWorkletHCAPlayer {
             };
         });
     }
-    setSource(source, key1, key2) {
+    setSource(source, key1, key2, subkey) {
         return __awaiter(this, void 0, void 0, function* () {
             let newInfo;
             let newSource;
@@ -3373,7 +3662,7 @@ class HCAAudioWorkletHCAPlayer {
                     }), result: () => __awaiter(this, void 0, void 0, function* () {
                         yield this._suspend(); // initialized, but it's paused, until being requested to start/play (resume)
                         this.totalFedBlockCount = 0;
-                        this.cipher = HCAAudioWorkletHCAPlayer.getCipher(newInfo, key1, key2);
+                        this.cipher = HCAAudioWorkletHCAPlayer.getCipher(newInfo, key1, key2, subkey);
                         this.info = newInfo;
                         this.source = newSource;
                         this.srcBuf = newBuffer;
@@ -3583,14 +3872,19 @@ export class HCAWorker {
             return yield this.taskQueue.execCmd("fixChecksum", [hca]);
         });
     }
-    decrypt(hca, key1, key2) {
+    findKey(hca, givenKeyList, subkey, threshold = 0.5, depth = 1024) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.taskQueue.execCmd("decrypt", [hca, key1, key2]);
+            return yield this.taskQueue.execCmd("findKey", [hca, givenKeyList, subkey, threshold, depth]);
         });
     }
-    encrypt(hca, key1, key2) {
+    decrypt(hca, key1, key2, subkey) {
         return __awaiter(this, void 0, void 0, function* () {
-            return yield this.taskQueue.execCmd("encrypt", [hca, key1, key2]);
+            return yield this.taskQueue.execCmd("decrypt", [hca, key1, key2, subkey]);
+        });
+    }
+    encrypt(hca, key1, key2, subkey) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return yield this.taskQueue.execCmd("encrypt", [hca, key1, key2, subkey]);
         });
     }
     addHeader(hca, sig, newData) {
@@ -3608,7 +3902,7 @@ export class HCAWorker {
             return yield this.taskQueue.execCmd("decode", [hca, mode, loop, volume]);
         });
     }
-    loadHCAForPlaying(hca, key1, key2) {
+    loadHCAForPlaying(hca, key1, key2, subkey) {
         return __awaiter(this, void 0, void 0, function* () {
             if (typeof hca === "string") {
                 if (hca === "")
@@ -3618,10 +3912,10 @@ export class HCAWorker {
             else if (!(hca instanceof URL) && !(hca instanceof Uint8Array))
                 throw new Error("hca must be either URL or Uint8Array");
             if (this.awHcaPlayer == null) {
-                this.awHcaPlayer = yield HCAAudioWorkletHCAPlayer.create(this.selfUrl, hca, key1, key2);
+                this.awHcaPlayer = yield HCAAudioWorkletHCAPlayer.create(this.selfUrl, hca, key1, key2, subkey);
             }
             else {
-                yield this.awHcaPlayer.setSource(hca, key1, key2);
+                yield this.awHcaPlayer.setSource(hca, key1, key2, subkey);
             }
         });
     }

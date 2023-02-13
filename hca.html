@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html>
+
 <head></head>
+
 <body>
     <h1>HCA decoder demo</h1>
     <a href="https://github.com/y2361547758/hca.js">GitHub repo</a>
@@ -8,7 +10,7 @@
     <button disabled id="startworkerbtn">start background worker</button><br>
     <button disabled id="shutdownbtn">shutdown background worker</button><br>
     <hr>
-    <h3>Choose a HCA file</h3>
+    <h3>Choose a HCA or AWB file</h3>
     Drag & drop a file here,<br>
     <form id="localfileform">
         Or pick a local file: <input type="file" id="localfile" accept=".hca,application/octet-stream"><br>
@@ -18,18 +20,20 @@
     <b><u>Don't forget to</u></b> <button disabled id="loadfilebtn">load picked file</button><br>
     Or download from URL: <input type="text" spellcheck="false" id="urlinput" value="bgm22_battle01_hca.hca"><br>
     <button id="downloadbtn">download</button><br>
+    <div id="awbsubsongswitcher"></div>
     <hr>
     <h3>Set keys for decryption/encryption</h3>
     key1=<input type="text" spellcheck="false" id="key1input" value="0x01395C51"><br>
     key2=<input type="text" spellcheck="false" id="key2input" value="0x00000000"><br>
-    <i>Note: output waveform will be nothing but unpleasant meaningless noise if incorrect keys are given!</i><br>
+    <i>(optional) </i>subkey=<input type="text" spellcheck="false" id="subkeyinput" value="0x0"><br>
+    <i>Note: output waveform will be (almostly all) silence if incorrect keys are given!</i><br>
     <hr>
     <h3>Streaming (<a href="https://developer.mozilla.org/en-US/docs/Web/API/AudioWorklet">AudioWorklet API</a>)</h3>
     <input type="checkbox" checked id="awautoplayondrop">
     <label for="awautoplyondrop">Automatically play drag & dropped HCA file</label><br>
     <b><u>Some browsers like Safari (Apple WebKit) may lock AudioContext initially, which blocks auto-play.<br>
-        To unlock AudioContext (so that auto-play will no longer be blocked),<br>
-        please click anywhere on this page after drag & drop.</u></b><br>
+            To unlock AudioContext (so that auto-play will no longer be blocked),<br>
+            please click anywhere on this page after drag & drop.</u></b><br>
     Load a HCA file for playing, which has been fully loaded/downloaded above:<br>
     <button id="awloadwholehcabtn">Load</button><br>
     Load directly from the URL above, without fully downloading the whole file:<br>
@@ -42,7 +46,8 @@
     <h3>Decode the whole file</h3>
     Note:<br>
     (1) <b>Please click "get HCA info" button first.</b><br>
-    (2) Setting decoding mode to <b>zero means 32-bit float mode</b>, or <b>8/16/24/32-bit integer mode</b> otherwise.<br>
+    (2) Setting decoding mode to <b>zero means 32-bit float mode</b>, or <b>8/16/24/32-bit integer mode</b>
+    otherwise.<br>
     (3) Loop count is <b>ignored if HCA header doesn't have loop section</b><br>
     (4) Loop count doesn't count the existing part which is originally supposed to be looped.<br>
     &nbsp;&nbsp;&nbsp;&nbsp;<b>In other words, actual loop count will be: the number set here plus one.</b><br>
@@ -56,12 +61,15 @@
                 border-left: 1px solid #000;
                 border-spacing: 0;
             }
+
             tbody td {
                 border-bottom: 1px solid #000;
                 border-right: 1px solid #000;
                 min-width: 8ch;
             }
-            thead tr th, tfoot tr th {
+
+            thead tr th,
+            tfoot tr th {
                 background-color: #fff;
                 color: #000;
                 border-bottom: 1px solid #000;
@@ -92,7 +100,8 @@
     </fieldset>
     <fieldset>
         <legend>Decoding parameters</legend>
-        Decoding mode: <input type="number" step="8" min="0" max="32" placeholder="0-99" id="decodingmodeinput" value="16"><br>
+        Decoding mode: <input type="number" step="8" min="0" max="32" placeholder="0-99" id="decodingmodeinput"
+            value="16"><br>
         Loop count: <input type="number" step="1" min="0" max="99" placeholder="0-99" id="loopcountinput" value="0"><br>
         Volume: <input type="range" step="1" min="0" max="100" placeholder="0-100" id="volumeslider" value="100">
         <input type="number" step="1" min="0" max="100" placeholder="0-100" id="volumeinput" value="100"><br>
@@ -111,9 +120,12 @@
         <button disabled id="webaudiostopbtn">Stop</button><br>
     </fieldset>
     <!-- <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.8.3/dist/ffmpeg.min.js"></script> -->
+    <script>
+        var AWBSubsongSelect = null;
+    </script>
     <script type="module">
         const hcaJsUrl = new URL("hca.js", document.baseURI);
-        var hcaJsModule, hcaJsObjUrl, HCAInfo, HCAWorker, HCAWebAudioLoopPlayer;
+        var hcaJsModule, hcaJsObjUrl, AWBArchive, HCAInfo, HCAWorker, HCAWebAudioLoopPlayer;
 
         // mime types
         const defMimeType = "application/octet-stream";
@@ -131,23 +143,58 @@
         // dragged file
         var draggedFile = null;
 
+        // parsed AWB
+        var parsedAWB = null;
+
         // local file picker
         const localfile = document.getElementById("localfile");
         const localfileform = document.getElementById("localfileform");
         // onchange does not work on iOS Safari
-        localfile.addEventListener("change", function (ev) {buttons.loadfilebtn = this.files.length > 0;});
+        localfile.addEventListener("change", function (ev) { buttons.loadfilebtn = this.files.length > 0; });
         // reset state on refresh
         // https://bugzilla.mozilla.org/show_bug.cgi?id=685657
         localfileform.reset();
         // workaround for iOS Safari file picker
-        document.getElementById("hcaonly").addEventListener("change", function(ev) {
+        document.getElementById("hcaonly").addEventListener("change", function (ev) {
             localfile.accept = ev.target.checked ? ".hca,application/octet-stream" : "";
         });
+        // AWB subsong switcher
+        const awbsubsongswitcher = document.getElementById("awbsubsongswitcher");
+        AWBSubsongSelect = function (selected) {
+            let waveID = selected.id.replace(/^awb_subsong_id_/, "");
+            fileName = `${AWBFileName}_0.hca`;
+            hcaFileData.original.data = parsedAWB.hcaFiles[0].file;
+        }
+        function setAWBSubSongSwitcher(enable) {
+            if (!enable) {
+                awbsubsongswitcher.innerHTML = "";
+                keys.subkey = "0x0";
+                return;
+            }
+
+            const waveIDs = parsedAWB.hcaFiles.map((e) => e.waveID);
+            const subkey = `0x${parsedAWB.subkey.toString(16)}`;
+
+            console.log(`AWB archive version=[${parsedAWB.version}]`
+                + `, subsong count=[${parsedAWB.hcaFiles.length}], subkey=[${subkey}]`);
+
+            keys.subkey = subkey;
+            awbsubsongswitcher.innerHTML = `<fieldset><legend>AWB archive subsongs</legend>\n`
+                + `${waveIDs.map(
+                    (id) =>
+                        `<div><input type=\"radio\" name=\"awb_subsong_id\" id=\"awb_subsong_id_${id}\"`
+                        + ` onclick=\"AWBSubsongSelect(this);\">`
+                        + `<label for=\"awb_subsong_id_${id}\">${id}</label>`
+                        + `</div>`
+                ).join("\n")}\n`
+                + `</fieldset>`;
+        }
 
         // input HCA URL
         const urlinput = document.getElementById("urlinput");
 
         // file name
+        var AWBFileName = null;
         var fileName = null;
 
         // HCA info table
@@ -164,7 +211,7 @@
             },
         }
         Object.defineProperty(hcaInfoTable.body, "data", {
-            get: function () {return this.value},
+            get: function () { return this.value },
             set: function (val) {
                 // clear existing content
                 for (let i = hcaInfoTable.body.el.getElementsByTagName("tr").length - 1; i >= 0; i--) {
@@ -246,12 +293,26 @@
         });
 
         // keys
-        const keys = {key1: undefined, key2: undefined};
+        const keys = { key1: undefined, key2: undefined, subkey: undefined };
         for (let key in keys) {
             Object.defineProperty(keys, key, {
-                get: function () {return document.getElementById(key + "input").value},
-                set: function (val) {document.getElementById(key + "input").value = val},
+                get: function () { return document.getElementById(key + "input").value },
+                set: function (val) { document.getElementById(key + "input").value = val },
             });
+        }
+        async function testAndFindValidKeyAsync() {
+            worker.tick();
+            let resultPromise = worker.findKey(hcaFileData.original.data, [[keys.key1, keys.key2]], keys.subkey);
+            worker.tock(`findKey`);
+            let result = await resultPromise;
+            if (result != null) {
+                result = result.map((k) => `0x${k.toString(16)}`);
+                console.log(`found valid key`, result);
+                keys.key1 = result[0];
+                keys.key2 = result[1];
+            } else {
+                console.warn(`no valid key found!`);
+            }
         }
 
         // mode/loop/volume
@@ -351,7 +412,7 @@
         }
         for (let suffix in hcaFileData) {
             Object.defineProperty(hcaFileData[suffix], "data", {
-                get: function () {return this.value},
+                get: function () { return this.value },
                 set: function (val) {
                     this.value = null; // clear existing data
                     const fileExtRegEx = /\.([^\.]+)$/;
@@ -378,7 +439,7 @@
                     let extName = newFileName.match(fileExtRegEx)[0];
                     let mimeType = mimeTypeMap[extName];
                     if (mimeType == null) mimeType = defMimeType;
-                    el.setAttribute("href", URL.createObjectURL(new Blob([val], {type: mimeType})));
+                    el.setAttribute("href", URL.createObjectURL(new Blob([val], { type: mimeType })));
                     el.innerHTML = newFileName;
                     let refNode = document.getElementById(hcaFileData[suffix].btnID).nextSibling;
                     refNode.parentElement.insertBefore(document.createElement("br"), refNode);
@@ -393,6 +454,7 @@
             for (let suffix in hcaFileData) {
                 hcaFileData[suffix].data = null;
             }
+            setAWBSubSongSwitcher(null);
             hcaInfoTable.body.data = null;
             audioElement.src = null;
             console.log(`cleared all data`);
@@ -404,7 +466,7 @@
             src: ""
         };
         Object.defineProperty(audioElement, "src", {
-            get: function () {return this.value},
+            get: function () { return this.value },
             set: function (val) {
                 if (this.value != null && this.value != "")
                     URL.revokeObjectURL(this.value);
@@ -414,7 +476,7 @@
                 }
                 let newUrl;
                 if (val instanceof ArrayBuffer || val.buffer instanceof ArrayBuffer) {
-                    newUrl = URL.createObjectURL(new Blob([val], {type: mimeTypeMap.wav}));
+                    newUrl = URL.createObjectURL(new Blob([val], { type: mimeTypeMap.wav }));
                 } else {
                     newUrl = val;
                 }
@@ -428,12 +490,13 @@
                 if (worker == null) {
                     if (hcaJsObjUrl == null) {
                         const response = await fetch(hcaJsUrl.href);
-                        const blob = new Blob([await response.arrayBuffer()], {type: "text/javascript"});
+                        const blob = new Blob([await response.arrayBuffer()], { type: "text/javascript" });
                         hcaJsObjUrl = URL.createObjectURL(blob);
                     }
                     if (hcaJsModule == null) {
                         hcaJsModule = await import(hcaJsObjUrl);
                     }
+                    if (AWBArchive == null) AWBArchive = hcaJsModule.AWBArchive;
                     if (HCAInfo == null) HCAInfo = hcaJsModule.HCAInfo;
                     if (HCAWorker == null) HCAWorker = hcaJsModule.HCAWorker;
                     if (HCAWebAudioLoopPlayer == null) HCAWebAudioLoopPlayer = hcaJsModule.HCAWebAudioLoopPlayer;
@@ -478,7 +541,26 @@
                 } else {
                     ab = await file.arrayBuffer();
                 }
-                hcaFileData.original.data = new Uint8Array(ab);
+                // parse AWB
+                AWBFileName = null;
+                parsedAWB = null;
+                if (AWBArchive.isAWB(new Uint8Array(ab))) {
+                    try {
+                        parsedAWB = new AWBArchive(new Uint8Array(ab));
+                    } catch (e) {
+                        console.error(`error parsing AWB archive`, e);
+                    }
+                }
+                if (parsedAWB != null && parsedAWB.hcaFiles.length > 0) {
+                    AWBFileName = fileName;
+                    setAWBSubSongSwitcher(true);
+                    AWBSubsongSelect({ id: "awb_subsong_id_0" });
+                } else {
+                    setAWBSubSongSwitcher(null);
+                    hcaFileData.original.data = new Uint8Array(ab);
+                }
+                // find valid key
+                await testAndFindValidKeyAsync();
                 self.textContent = "load picked file (successful)";
                 // no need to let the button bounce
                 // next step
@@ -545,6 +627,8 @@
                 let ab = await response.arrayBuffer();
                 hcaFileData.original.data = new Uint8Array(ab);
                 self.textContent = "download (successful)";
+                // find valid key
+                await testAndFindValidKeyAsync();
                 // let the button bounce
                 self.disabled = false;
                 // next step
@@ -554,7 +638,7 @@
             },
             awloadwholehcabtn: async (self) => {
                 try {
-                    await worker.loadHCAForPlaying(hcaFileData.original.data, keys.key1, keys.key2);
+                    await worker.loadHCAForPlaying(hcaFileData.original.data, keys.key1, keys.key2, keys.subkey);
                     self.textContent = "Load (successful)";
                 } catch (e) {
                     self.textContent = "Load (failed)";
@@ -570,7 +654,7 @@
             },
             awloadfromurlbtn: async (self) => {
                 try {
-                    await worker.loadHCAForPlaying(urlinput.value, keys.key1, keys.key2);
+                    await worker.loadHCAForPlaying(urlinput.value, keys.key1, keys.key2, keys.subkey);
                     self.textContent = "Load (successful)";
                 } catch (e) {
                     self.textContent = "Load (failed)";
@@ -639,7 +723,7 @@
                     // update table content
                     hcaInfoTable.body.data = info;
                     // next step
-                    let isEncrypted = info.hasHeader["ciph"] && info.cipher !=0;
+                    let isEncrypted = info.hasHeader["ciph"] && info.cipher != 0;
                     buttons.encryptbtn = !isEncrypted;
                     buttons.decryptbtn = isEncrypted;
                     buttons.decodetoh5btn = !isEncrypted;
@@ -788,7 +872,7 @@
             }
             const initialText = el.textContent;
             Object.defineProperty(buttons, id, {
-                get: function () {return !el.disabled},
+                get: function () { return !el.disabled },
                 set: function (val) {
                     if (val === "click") {
                         el.disabled = true;
@@ -800,7 +884,7 @@
                 },
             });
             Object.defineProperty(_buttons, id, {
-                get: function () {return onclick;},
+                get: function () { return onclick; },
             });
         }
         buttons.startworkerbtn = "click"; // start background worker
@@ -871,7 +955,7 @@
                 // although decryption/encryption is done in-place,
                 // however since we are not using SharedArrayBuffer,
                 // the background worker is still actually overwritting a newly allocated buffer
-                let resultPromise = worker[action](hca, keys.key1, keys.key2);
+                let resultPromise = worker[action](hca, keys.key1, keys.key2, keys.subkey);
                 worker.tock(isEncrypting ? "encryption" : "decryption");
                 let result = await resultPromise;
                 self.textContent = action + " (done)";
@@ -901,7 +985,7 @@
                     const id = "awresumebtn";
                     const el = document.getElementById(id);
                     el.disabled = true;
-                    _buttons[id](el).then(() => {tryingUnlock = false;});
+                    _buttons[id](el).then(() => { tryingUnlock = false; });
                 }
             }
         }
@@ -946,11 +1030,12 @@
                     }
                     const el = document.getElementById(id);
                     el.disabled = true;
-                    _buttons[id](el).then(() => {clickNextBtn();});
+                    _buttons[id](el).then(() => { clickNextBtn(); });
                 }
                 clickNextBtn();
             }
         });
     </script>
 </body>
+
 </html>
