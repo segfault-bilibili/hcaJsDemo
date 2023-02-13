@@ -39,9 +39,12 @@
     Load directly from the URL above, without fully downloading the whole file:<br>
     <button id="awloadfromurlbtn">Load</button><br>
     Progress control:<br>
+    <input type="checkbox" id="awplayinbackground">
+    <label for="awplayinbackground">Play in background (may glitch)</label><br>
     <button id="awresumebtn">Play/Resume</button><br>
     <button id="awpausebtn">Pause</button><br>
     <button id="awstopbtn">Stop</button><br>
+    <a href="#volumeslider">Volume control</a> (in "decoding parameters" section)<br>
     <hr>
     <h3>Decode the whole file</h3>
     Note:<br>
@@ -105,6 +108,8 @@
         Loop count: <input type="number" step="1" min="0" max="99" placeholder="0-99" id="loopcountinput" value="0"><br>
         Volume: <input type="range" step="1" min="0" max="100" placeholder="0-100" id="volumeslider" value="100">
         <input type="number" step="1" min="0" max="100" placeholder="0-100" id="volumeinput" value="100"><br>
+        <i>This volume control affects <a href="#awresumebtn">AudioWorklet</a> and <a
+                href="#webaudioplaybtn">WebAudio</a> playing as well.</i><br>
     </fieldset>
     <fieldset>
         <legend>Decode to HTML5 Audio</legend>
@@ -115,6 +120,8 @@
         <legend>Decode to WebAudio AudioBufferSourceNode</legend>
         <b>Playing will seamlessly loop if HCA supports looping.</b><br>
         <button disabled id="decodetowabtn">decode</button><br>
+        <input type="checkbox" id="webaudioplayinbackground">
+        <label for="webaudioplayinbackground">Play in background (may glitch)</label><br>
         <button disabled id="webaudioplaybtn">Play</button><br>
         <button disabled id="webaudiopausebtn">Pause</button><br>
         <button disabled id="webaudiostopbtn">Stop</button><br>
@@ -160,11 +167,12 @@
         });
         // AWB subsong switcher
         const awbsubsongswitcher = document.getElementById("awbsubsongswitcher");
-        AWBSubsongSelect = function (selected) {
+        AWBSubsongSelect = function (selected, doNotPlay) {
             let index = selected.id.replace(/^awb_subsong_index_/, "");
             fileName = `${AWBFileName}_${index}.hca`;
             hcaFileData.original.data = parsedAWB.hcaFiles[index].file;
-            if (document.getElementById("awautoplayondrop").checked) {
+            if (!doNotPlay && document.getElementById("awautoplayondrop").checked) {
+                // doNotPlay=true, will play in "drop" event
                 buttons.awloadwholehcabtn = "click";
                 buttons.awresumebtn = "click";
             }
@@ -345,6 +353,9 @@
 
         function setVolume(val) {
             val = Number(val) / 100;
+            if (worker != null && worker.awHcaPlayer != null) {
+                worker.awHcaPlayer.volume = val;
+            }
             if (webAudioLoopPlayer != null) {
                 webAudioLoopPlayer.volume = val;
             }
@@ -362,6 +373,18 @@
             }
             setVolume(val);
         });
+
+        // play in background checkbox
+        const awplayinbackground = document.getElementById("awplayinbackground");
+        awplayinbackground.addEventListener("change", (ev) => {
+            if (worker == null || worker.awHcaPlayer == null) return;
+            worker.awHcaPlayer.playInBackground = ev.target.checked;
+        }, false);
+        const webaudioplayinbackground = document.getElementById("webaudioplayinbackground");
+        webaudioplayinbackground.addEventListener("change", (ev) => {
+            if (webAudioLoopPlayer == null) return;
+            webAudioLoopPlayer.playInBackground = ev.target.checked;
+        }, false);
 
         for (let paramName in decodingParam) {
             let el = decodingParam[paramName].el;
@@ -566,7 +589,7 @@
                 if (parsedAWB != null && parsedAWB.hcaFiles.length > 0) {
                     AWBFileName = fileName;
                     setAWBSubSongSwitcher(true);
-                    AWBSubsongSelect({ id: "awb_subsong_index_0" });
+                    AWBSubsongSelect({ id: "awb_subsong_index_0" }, true); // doNotPlay=true, will play in "drop" event
                 } else {
                     setAWBSubSongSwitcher(null);
                     hcaFileData.original.data = new Uint8Array(ab);
@@ -651,6 +674,7 @@
             awloadwholehcabtn: async (self) => {
                 try {
                     await worker.loadHCAForPlaying(hcaFileData.original.data, keys.key1, keys.key2, keys.subkey);
+                    worker.awHcaPlayer.playInBackground = awplayinbackground.checked;
                     self.textContent = "Load (successful)";
                 } catch (e) {
                     self.textContent = "Load (failed)";
@@ -667,6 +691,7 @@
             awloadfromurlbtn: async (self) => {
                 try {
                     await worker.loadHCAForPlaying(urlinput.value, keys.key1, keys.key2, keys.subkey);
+                    worker.awHcaPlayer.playInBackground = awplayinbackground.checked;
                     self.textContent = "Load (successful)";
                 } catch (e) {
                     self.textContent = "Load (failed)";
@@ -821,6 +846,7 @@
                     // update player instance
                     if (webAudioLoopPlayer != null) await webAudioLoopPlayer.stop();
                     webAudioLoopPlayer = newPlayer;
+                    webAudioLoopPlayer.playInBackground = webaudioplayinbackground.checked;
                     self.textContent = "decode (done)";
                     // next step (play)
                     buttons.webaudioplaybtn = true;
