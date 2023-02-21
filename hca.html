@@ -1064,6 +1064,17 @@
             // https://stackoverflow.com/questions/46668079/addeventlistener-drop-not-firing
             ev.preventDefault();
         });
+
+        const audioCtxUnlocker = document.getElementById("audioctx_unlocker");
+        function setShowAudioCtxUnlocker(show) {
+            if (show) {
+                audioCtxUnlocker.classList.add("overlay");
+                audioCtxUnlocker.classList.remove("hidden");
+            } else {
+                audioCtxUnlocker.classList.add("hidden");
+            }
+        }
+
         var tryingUnlock = false;
         function tryUnlock() {
             if (worker.awHcaPlayer && !worker.awHcaPlayer.unlocked) {
@@ -1075,6 +1086,7 @@
                     el.disabled = true;
                     _buttons[id](el).then(() => {
                         tryingUnlock = false;
+                        setShowAudioCtxUnlocker(false);
                         window.dispatchEvent(audioCtxUnlockedEvent);
                     });
                 }
@@ -1116,6 +1128,7 @@
                         if (worker.awHcaPlayer && !worker.awHcaPlayer.unlocked) {
                             // FIXME temporary workaround
                             console.warn("awHcaPlayer is still locked, give up before clicking " + id);
+                            setShowAudioCtxUnlocker(true);
                             return;
                         }
                     }
@@ -1143,19 +1156,18 @@
                         resolve();
                         return;
                     }
-                    audioCtxUnlocker.classList.add("overlay");
-                    audioCtxUnlocker.classList.remove("hidden");
-                    window.addEventListener(audioCtxUnlockedEvent.type, () => {
-                        audioCtxUnlocker.classList.add("hidden");
+                    setShowAudioCtxUnlocker(true);
+                    const listener = () => {
+                        window.removeEventListener(audioCtxUnlockedEvent.type, listener);
                         resolve();
-                    });
+                    }
+                    window.addEventListener(audioCtxUnlockedEvent.type, listener);
                 });
             });
 
             buttons.awresumebtn = "click";
         }
 
-        const audioCtxUnlocker = document.getElementById("audioctx_unlocker");
         window.addEventListener("load", () => {
             window.addEventListener(hcaWorkerLoadedEvent.type, () => {
                 handleHashChange();
