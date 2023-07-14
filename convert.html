@@ -30,11 +30,31 @@
             console.log("started background worker");
         }
 
-        const convert = async () => {
+        const convert = async (file) => {
             try {
-                let urlinput = document.getElementById("urlinput");
-                let response = await fetch(urlinput.value);
-                let hca = new Uint8Array(await response.arrayBuffer());
+                let hca;
+                let filename;
+                if (file != null) {
+                    filename = file.name;
+                    let ab;
+                    if (file.arrayBuffer == null) {
+                        let objUrl = URL.createObjectURL(file);
+                        let resp = await fetch(objUrl);
+                        URL.revokeObjectURL(objUrl);
+                        ab = await resp.arrayBuffer();
+                    } else {
+                        ab = await file.arrayBuffer();
+                    }
+                    hca = new Uint8Array(ab);
+                } else {
+                    let urlinput = document.getElementById("urlinput");
+                    let url = new URL(urlinput.value, document.baseURI);
+                    let matched = url.pathname.match(/[^\/]+$/);
+                    filename = matched ? matched[0] : "default_filename";
+                    let response = await fetch(url);
+                    hca = new Uint8Array(await response.arrayBuffer());
+                }
+
                 let decrypted = await worker.decrypt(hca, 0x01395C51, 0x00000000);
     
                 let loopcountinput = document.getElementById("loopcountinput");
@@ -42,8 +62,8 @@
                 if (isNaN(loopcount) || loopcount < 0) loopcount = 0;
                 let decoded = await worker.decode(decrypted, 16, loopcount, 1);
     
-                let id = urlinput.value + "-download-link";
-                let newFileName = urlinput.value.replace(/\.hca$/i, ".wav");
+                let id = "download-link";
+                let newFileName = filename.replace(/\.hca$/i, ".wav");
                 let el = document.getElementById(id);
                 if (el != null) {
                     // remove existing download link
@@ -67,6 +87,33 @@
                 alert(e, e.stack);
             }
         }
+
+        window.addEventListener("dragover", function (ev) {
+            // https://stackoverflow.com/questions/46668079/addeventlistener-drop-not-firing
+            ev.preventDefault();
+        });
+        window.addEventListener("drop", function (ev) {
+            ev.preventDefault();
+            let file = null;
+            const dtItems = ev.dataTransfer.items;
+            const dtFiles = ev.dataTransfer.files;
+            if (dtItems != null && dtItems.length == 1) {
+                // Use DataTransferItemList interface to access the file(s)
+                const item = dtItems[0];
+                if (item.kind === "file") {
+                    file = item.getAsFile();
+                }
+            } else if (dtFiles != null && dtFiles.length == 1) {
+                // Use DataTransfer interface to access the file(s)
+                file = dtFiles[0];
+            }
+            if (file != null) {
+                if (!downloadbtn.disabled) {
+                    downloadbtn.disabled = true;
+                    convert(file);
+                }
+            }
+        });
 
         downloadbtn.addEventListener("click", (ev) => {
             downloadbtn.disabled = true;
