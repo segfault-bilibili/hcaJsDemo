@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>
+    <h1>HCA decoder demo</h1>
+    <a href="./">Full version</a>
+    <hr>
+    <input type="text" spellcheck="false" id="urlinput" value="bgm03_story02_hca.hca"><br>
+    <button id="downloadbtn">Download</button><br>
+    Loop count: <input type="number" step="1" min="0" max="99" placeholder="0-99" id="loopcountinput" value="0"><br>
+    <script type="module">
+        const hcaJsUrl = new URL("hca.js", document.baseURI);
+        var hcaJsModule, hcaJsObjUrl, HCAInfo, HCAWorker;
+
+        // HCAWorker instance
+        var worker = null;
+
+        if (worker == null) {
+            if (hcaJsObjUrl == null) {
+                const response = await fetch(hcaJsUrl.href);
+                const blob = new Blob([await response.arrayBuffer()], {type: "text/javascript"});
+                hcaJsObjUrl = URL.createObjectURL(blob);
+            }
+            if (hcaJsModule == null) {
+                hcaJsModule = await import(hcaJsObjUrl);
+            }
+            if (HCAInfo == null) HCAInfo = hcaJsModule.HCAInfo;
+            if (HCAWorker == null) HCAWorker = hcaJsModule.HCAWorker;
+            worker = await HCAWorker.create(hcaJsObjUrl);
+            console.log("started background worker");
+        }
+
+        const convert = async () => {
+            try {
+                let urlinput = document.getElementById("urlinput");
+                let response = await fetch(urlinput.value);
+                let hca = new Uint8Array(await response.arrayBuffer());
+                let decrypted = await worker.decrypt(hca, 0x01395C51, 0x00000000);
+    
+                let loopcountinput = document.getElementById("loopcountinput");
+                let loopcount = Number(loopcountinput.value);
+                if (isNaN(loopcount) || loopcount < 0) loopcount = 0;
+                let decoded = await worker.decode(decrypted, 16, loopcount, 1);
+    
+                let id = urlinput.value + "-download-link";
+                let newFileName = urlinput.value.replace(/\.hca$/i, ".wav");
+                let el = document.getElementById(id);
+                if (el != null) {
+                    // remove existing download link
+                    URL.revokeObjectURL(el.getAttribute("href"));
+                    el.nextSibling.remove();
+                    el.remove();
+                }
+                // create new download link
+                el = document.createElement("a");
+                el.setAttribute("id", id);
+                el.setAttribute("download", newFileName);
+                el.setAttribute("href", URL.createObjectURL(new Blob([decoded], { type: "audio/x-wav" })));
+                el.innerHTML = newFileName;
+                let refNode = document.getElementById("downloadbtn").nextSibling;
+                refNode.parentElement.insertBefore(document.createElement("br"), refNode);
+                refNode.parentElement.insertBefore(el, refNode);
+    
+                downloadbtn.disabled = false;
+            } catch (e) {
+                console.error(e);
+                alert(e, e.stack);
+            }
+        }
+
+        downloadbtn.addEventListener("click", (ev) => {
+            downloadbtn.disabled = true;
+            convert();
+        });
+    </script>
+</body>
+</html>
