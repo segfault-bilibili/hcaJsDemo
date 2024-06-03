@@ -1,0 +1,1094 @@
+[
+    {
+        "groupname": "Magia Record Game BGM",
+        "entries": [
+            {
+                "filename": "bgm00_system01_hca.hca",
+                "desc": "かかわり 关系 (第一部op - 伴奏)"
+            },
+            {
+                "filename": "bgm01_battle01_hca.hca",
+                "desc": "Infinite Battle 无限之战"
+            },
+            {
+                "filename": "bgm01_battle02_hca.hca",
+                "desc": "First Contact 初级见面"
+            },
+            {
+                "filename": "bgm01_battle03_hca.hca",
+                "desc": "Place to Hunt 狩猎之地"
+            },
+            {
+                "filename": "bgm01_battle04_hca.hca",
+                "desc": "Creation 造物"
+            },
+            {
+                "filename": "bgm01_battle05_hca.hca",
+                "desc": "Awaken 觉醒"
+            },
+            {
+                "filename": "bgm01_battle06_hca.hca",
+                "desc": "Welcome to Mirrors 欢迎进入镜界"
+            },
+            {
+                "filename": "bgm01_battle07_hca.hca",
+                "desc": "Battle Bell 战斗铃音"
+            },
+            {
+                "filename": "bgm01_battle08_hca.hca",
+                "desc": "Depth in the Mirror 深陷险镜 (高难关专用)"
+            },
+            {
+                "filename": "bgm01_battle09_hca.hca",
+                "desc": "The Other Side 在另一面"
+            },
+            {
+                "filename": "bgm01_battle10_hca.hca",
+                "desc": "Initiation Battle 启始之战"
+            },
+            {
+                "filename": "bgm01_battle11_hca.hca",
+                "desc": "Magical Artist 魔女艺术家"
+            },
+            {
+                "filename": "bgm01_battle12_hca.hca",
+                "desc": "Calculated Future"
+            },
+            {
+                "filename": "bgm01_battle13_hca.hca",
+                "desc": "Reunion 相聚"
+            },
+            {
+                "filename": "bgm02_boss01_hca.hca",
+                "desc": "Be Terrified 胆寒"
+            },
+            {
+                "filename": "bgm02_boss02_hca.hca",
+                "desc": "Wings of Magius 玛吉斯之翼们"
+            },
+            {
+                "filename": "bgm02_boss03_hca.hca",
+                "desc": "Full Moon 满月"
+            },
+            {
+                "filename": "bgm02_boss04_hca.hca",
+                "desc": "The Imaginator 幻想者"
+            },
+            {
+                "filename": "bgm03_story01_hca.hca",
+                "desc": "Lost Tension 暂缓的氛围"
+            },
+            {
+                "filename": "bgm03_story02_hca.hca",
+                "desc": "Memories 记忆"
+            },
+            {
+                "filename": "bgm03_story03_hca.hca",
+                "desc": "To Remember 铭记此刻"
+            },
+            {
+                "filename": "bgm03_story04_hca.hca",
+                "desc": "The Lecture 讲座"
+            },
+            {
+                "filename": "bgm03_story05_hca.hca",
+                "desc": "Repeat Days 每日每天"
+            },
+            {
+                "filename": "bgm03_story06_hca.hca",
+                "desc": "Twilight 暮光"
+            },
+            {
+                "filename": "bgm03_story07_hca.hca",
+                "desc": "Remain 滞留"
+            },
+            {
+                "filename": "bgm03_story08_hca.hca",
+                "desc": "Anxiety 忧虑 (焦虑)"
+            },
+            {
+                "filename": "bgm03_story09_hca.hca",
+                "desc": "Coordinator 协调员 (?)"
+            },
+            {
+                "filename": "bgm03_story10_hca.hca",
+                "desc": "Into The Territory 深入地区"
+            },
+            {
+                "filename": "bgm03_story11_hca.hca",
+                "desc": "Thought of You 想念于你"
+            },
+            {
+                "filename": "bgm03_story12_hca.hca",
+                "desc": "Touch One's Heart 触摸惊心"
+            },
+            {
+                "filename": "bgm03_story13_hca.hca",
+                "desc": "Hotel Fenthope"
+            },
+            {
+                "filename": "bgm03_story14_hca.hca",
+                "desc": "Uwasa-san 谣小姐"
+            },
+            {
+                "filename": "bgm03_story15_hca.hca",
+                "desc": "Intermediate 交界之地"
+            },
+            {
+                "filename": "bgm03_story16_hca.hca",
+                "desc": "One Day She Meets 当她遇到时"
+            },
+            {
+                "filename": "bgm03_story17_hca.hca",
+                "desc": "Plot 阴谋"
+            },
+            {
+                "filename": "bgm03_story18_hca.hca",
+                "desc": "Farewell 送别"
+            },
+            {
+                "filename": "bgm03_story19_hca.hca",
+                "desc": "This Morning 清晨"
+            },
+            {
+                "filename": "bgm03_story20_hca.hca",
+                "desc": "Little Trick 小小的玩笑"
+            },
+            {
+                "filename": "bgm03_story21_hca.hca",
+                "desc": "Hot Summer Day 夏日炎炎 (泳装活动用)"
+            },
+            {
+                "filename": "bgm03_story22_hca.hca",
+                "desc": "Last Dungeon 最后的迷宫"
+            },
+            {
+                "filename": "bgm03_story23_hca.hca",
+                "desc": "Inception 开端"
+            },
+            {
+                "filename": "bgm05_event01_hca.hca",
+                "desc": "Happy Christmas 圣诞快乐 (旧圣诞曲)"
+            },
+            {
+                "filename": "bgm05_event02_hca.hca",
+                "desc": "Happy New Year 新年快乐 (新年曲)"
+            },
+            {
+                "filename": "bgm05_event03_hca.hca",
+                "desc": "Battle Fields 战地 (反击用 - 贞德一期活动)"
+            },
+            {
+                "filename": "bgm05_event04_hca.hca",
+                "desc": "The Crow 乌鸦 (贞德一期活动？)"
+            },
+            {
+                "filename": "bgm05_event05_hca.hca",
+                "desc": "Painful Memories 苦痛的回忆 (活动开场 - 贞德一期活动)"
+            },
+            {
+                "filename": "bgm05_event06_hca.hca",
+                "desc": "Sunshine of the Mind 阳光的心灵 (活动开场 - 未都活动)"
+            },
+            {
+                "filename": "bgm05_event07_hca.hca",
+                "desc": "Complex Home 综合住宅"
+            },
+            {
+                "filename": "bgm05_event08_hca.hca",
+                "desc": "Inerasable 无法消除"
+            },
+            {
+                "filename": "bgm05_event09_hca.hca",
+                "desc": "There is 在那"
+            },
+            {
+                "filename": "bgm05_event10_hca.hca",
+                "desc": "Day of Rest 歇息之日"
+            },
+            {
+                "filename": "bgm05_event11_hca.hca",
+                "desc": "Double Christmas 长夜圣诞 (★OST 2)"
+            },
+            {
+                "filename": "bgm05_event12_hca.hca",
+                "desc": "国宝ハイエンド 高端国宝 (沙优希 - 专曲)"
+            },
+            {
+                "filename": "bgm05_event13_hca.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm05_event14_hca.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm05_event15_hca.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm20_song01_hca.hca",
+                "desc": "シグナル 信号 (第二部op - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song03_hca.hca",
+                "desc": "うつろい 变迁 (第二部开场 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song05_hca.hca",
+                "desc": "山茶花の跡 山茶花之迹 (深碧之巫 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song07_hca.hca",
+                "desc": "Bulimia 暴食 (深红的决断 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song09_2_hca.hca",
+                "desc": "Cinis 灰烬 (Volume Down) (第二部插曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song09_hca.hca",
+                "desc": "Cinis 灰烬 (第二部插曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song10_hca.hca",
+                "desc": "Cinis (Off Vocal) 灰烬 (第二部插曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song11_hca.hca",
+                "desc": "叶えちゃお 实现吧 (神滨偶像节 - 专曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song12_hca.hca",
+                "desc": "叶えちゃお (Off Vocal) 实现吧 (神滨偶像节 - 专曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song13_2_hca.hca",
+                "desc": "イデオロギー (Volume Down) 意识形态 (深蓝 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song13_hca.hca",
+                "desc": "イデオロギー 意识形态 (深蓝 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song14_hca.hca",
+                "desc": "イデオロギー (Off Vocal) 意识形态 (深蓝 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song15_hca.hca",
+                "desc": "演葬 (灰色革命 - ★OST 2)"
+            },
+            {
+                "filename": "bgm20_song16_hca.hca",
+                "desc": "演葬 (Off Vocal) (灰色革命 - ★OST 2)"
+            },
+            {
+                "filename": "bgm21_system01_hca.hca",
+                "desc": "??? 殲滅戦 歼灭战 (歼灭战主页)"
+            },
+            {
+                "filename": "bgm21_system02_hca.hca",
+                "desc": "??? (可能还有一种活动)"
+            },
+            {
+                "filename": "bgm21_system03_hca.hca",
+                "desc": "Outbreak 突发事件 (心魔战主页 - ★OST 2)"
+            },
+            {
+                "filename": "bgm21_system03_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm21_system04_hca.hca",
+                "desc": "??? Battle Museum 战斗博物馆 (博物馆主页)"
+            },
+            {
+                "filename": "bgm22_battle01_hca.hca",
+                "desc": "??? 殲滅戦 歼灭战 (歼灭战战斗曲 - BOSS战斗曲)"
+            },
+            {
+                "filename": "bgm22_battle03_hca.hca",
+                "desc": "??? (战斗博物馆关卡曲 - 可能是主线剧情的歌)"
+            },
+            {
+                "filename": "bgm22_battle04_hca.hca",
+                "desc": "??? (Used in Pillar of Tomorrow)"
+            },
+            {
+                "filename": "bgm22_battle05_hca.hca",
+                "desc": "??? (镜之魔女战斗曲 - 激战)"
+            },
+            {
+                "filename": "bgm22_battle06_hca.hca",
+                "desc": "??? (镜之魔女战斗曲 - 正战)"
+            },
+            {
+                "filename": "bgm22_battle07_hca.hca",
+                "desc": "??? (镜之魔女战斗曲 - 正战)"
+            },
+            {
+                "filename": "bgm22_battle08_hca.hca",
+                "desc": "Battle Fanfare 战斗号角 (血盟阵营曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle09_hca.hca",
+                "desc": "Bloody Battle 血战 (血盟战斗曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle10_hca.hca",
+                "desc": "Descended Battle 降临之战 (时女阵营曲? - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle11_hca.hca",
+                "desc": "Dance in the War 战中之舞 (时女阵营曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle12_hca.hca",
+                "desc": "New Era 新世纪 (新玛吉斯阵营曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle13_hca.hca",
+                "desc": "Battle Wings 战争羽翼 (新玛吉斯曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle13_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm22_battle14_hca.hca",
+                "desc": "Battle Wings 战争羽翼 (新玛吉斯曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle15_hca.hca",
+                "desc": "Battle Wings 战争羽翼 (新玛吉斯曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle16_hca.hca",
+                "desc": "Battle Wings 战争羽翼 (新玛吉斯曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle17_hca.hca",
+                "desc": "Battle Wings 战争羽翼 (新玛吉斯曲 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle18_hca.hca",
+                "desc": "Chain Battle 连锁反应 (★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle19_hca.hca",
+                "desc": "Chain Battle 连锁反应 (★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle20_hca.hca",
+                "desc": "Chain Battle 连锁反应 (★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle21_hca.hca",
+                "desc": "Sapphire 愉悦的蓝宝石之唇 (水心魔 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle21_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm22_battle22_hca.hca",
+                "desc": "Ruby 顺从的红宝石之脐 (火心魔 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle22_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm22_battle23_hca.hca",
+                "desc": "Aqua Marine 振动的海蓝宝石之踵 (木心魔- ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle23_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm22_battle24_hca.hca",
+                "desc": "Turquoise 下陷的绿松石之耳 (暗心魔 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle25_hca.hca",
+                "desc": "Opal 健全的蛋白石之首 (光心魔 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle26_hca.hca",
+                "desc": "Pearl 美丽的珍珠之眼 (光心魔 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle27_hca.hca",
+                "desc": "Diamond 漂浮的金刚石之发 (光心魔 - ★OST 2)"
+            },
+            {
+                "filename": "bgm22_battle28_hca.hca",
+                "desc": "Garnet 停止的石榴石之小指 (火心魔 - ★OST 2)"
+            },
+            {
+                "filename": "bgm23_folklore01_hca.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_folklore02_hca.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_folklore03_hca.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_folklore04_hca.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_folklore05_hca.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_folklore06_hca.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_magus01_hca.hca",
+                "desc": "Neo Magius 新玛吉斯 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_magus01_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_magus02_hca.hca",
+                "desc": "Feather Rest 歇息的羽翼 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_magus02_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_magus03_hca.hca",
+                "desc": "Fly High 高飞 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_magus03_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_magus04_hca.hca",
+                "desc": "Mystery 神秘 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_magus04_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_magus05_hca.hca",
+                "desc": "Frantic 疯狂 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_magus05_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_magus06_hca.hca",
+                "desc": "New Order 新指示 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_magus06_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_promised01_hca.hca",
+                "desc": "Promised Blood 血誓 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_promised02_hca.hca",
+                "desc": "Daily Life 日常生活 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_promised03_hca.hca",
+                "desc": "Funny Three 趣三(?) (★OST 2)"
+            },
+            {
+                "filename": "bgm23_promised04_hca.hca",
+                "desc": "Mysterious Red 神秘之赤 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_promised05_hca.hca",
+                "desc": "Crimson Fear 绯红恐惧 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_promised06_hca.hca",
+                "desc": "Pressure 压力 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_puella01_hca.hca",
+                "desc": "Puella Care 调整屋 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_puella01_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_puella02_hca.hca",
+                "desc": "Travelling 旅行 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_puella02_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_puella03_hca.hca",
+                "desc": "Trailer House 拖车房 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_puella03_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm23_puella04_hca.hca",
+                "desc": "Mysterious Road 神秘之路 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_puella05_hca.hca",
+                "desc": "Road to Nowhere 无果之路 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_puella06_hca.hca",
+                "desc": "Trip in the Dark 黑暗之旅 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_tokime01_hca.hca",
+                "desc": "Tokime Tribe 时女一族 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_tokime02_hca.hca",
+                "desc": "Country Side 乡村 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_tokime03_hca.hca",
+                "desc": "In Nature 自然而然 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_tokime04_hca.hca",
+                "desc": "Ritual 规矩 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_tokime05_hca.hca",
+                "desc": "Longing 渴望 (★OST 2)"
+            },
+            {
+                "filename": "bgm23_tokime06_hca.hca",
+                "desc": "Heritage 遗产 (★OST 2)"
+            },
+            {
+                "filename": "bgm24_story01_hca.hca",
+                "desc": "Heritage 遗产 (★OST 2)"
+            },
+            {
+                "filename": "bgm24_story02_hca.hca",
+                "desc": "Revive 重生 (★OST 2)"
+            },
+            {
+                "filename": "bgm24_story02_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm24_story03_hca.hca",
+                "desc": "Inferiority 劣势 (★OST 2)"
+            },
+            {
+                "filename": "bgm24_story03_hca_cn.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm24_story04_hca.hca",
+                "desc": "Night Combat 夜战 (★OST 2)"
+            },
+            {
+                "filename": "bgm24_story05_hca.hca",
+                "desc": "Ignition 点火 (★OST 2)"
+            },
+            {
+                "filename": "bgm24_story06_hca.hca",
+                "desc": "Faint Breath 暗淡的呼吸 (★OST 2)"
+            },
+            {
+                "filename": "bgm24_story07_hca.hca",
+                "desc": "Alone 孤独 (★OST 2)"
+            },
+            {
+                "filename": "bgm24_story08_hca.hca",
+                "desc": "Ordinary 普通的生活 (★OST 2)"
+            },
+            {
+                "filename": "bgm24_story09_hca.hca",
+                "desc": "Counter Strike 反击 (★OST 2)"
+            }
+        ]
+    },
+    {
+        "groupname": "Magireco BGM - Madoka Magica TV Anime",
+        "entries": [
+            {
+                "filename": "bgm01_anime02_hca.hca",
+                "desc": "Scaena felix"
+            },
+            {
+                "filename": "bgm01_anime03_hca.hca",
+                "desc": "Postmeridie"
+            },
+            {
+                "filename": "bgm01_anime04_hca.hca",
+                "desc": "Conturbatio 纷争"
+            },
+            {
+                "filename": "bgm01_anime05_hca.hca",
+                "desc": "Puella in somnio"
+            },
+            {
+                "filename": "bgm01_anime06_hca.hca",
+                "desc": "Salve, terrae magicae"
+            },
+            {
+                "filename": "bgm01_anime07_hca.hca",
+                "desc": "Desiderium"
+            },
+            {
+                "filename": "bgm01_anime08_hca.hca",
+                "desc": "Gradus prohibitus"
+            },
+            {
+                "filename": "bgm01_anime09_hca.hca",
+                "desc": "Credens justitiam 相信正义"
+            },
+            {
+                "filename": "bgm01_anime10_hca.hca",
+                "desc": "Sis puella magica!"
+            },
+            {
+                "filename": "bgm01_anime11_hca.hca",
+                "desc": "Inevitabilis 不可避"
+            },
+            {
+                "filename": "bgm01_anime12_hca.hca",
+                "desc": "Pugna cum maga 魔女间的对决"
+            },
+            {
+                "filename": "bgm01_anime13_hca.hca",
+                "desc": ""
+            },
+            {
+                "filename": "bgm01_anime14_hca.hca",
+                "desc": "Umbra nigra"
+            },
+            {
+                "filename": "bgm01_anime15_hca.hca",
+                "desc": "Venari strigas 魔女狩猎(?)"
+            },
+            {
+                "filename": "bgm01_anime16_hca.hca",
+                "desc": "Agmen clientum"
+            },
+            {
+                "filename": "bgm01_anime17_hca.hca",
+                "desc": "Signum malum"
+            },
+            {
+                "filename": "bgm01_anime18_hca.hca",
+                "desc": "Serena ira"
+            },
+            {
+                "filename": "bgm01_anime19_hca.hca",
+                "desc": "Incertus"
+            },
+            {
+                "filename": "bgm01_anime20_hca.hca",
+                "desc": "Ave Maria"
+            },
+            {
+                "filename": "bgm01_anime21_hca.hca",
+                "desc": "Decretum 宿命 (2023/10/13 更新)"
+            },
+            {
+                "filename": "bgm01_anime22_hca.hca",
+                "desc": "Anima mala"
+            },
+            {
+                "filename": "bgm01_anime25_hca.hca",
+                "desc": "コネクト -ゲームインスト- 羁绊(游戏伴奏)"
+            },
+            {
+                "filename": "bgm02_anime02_hca.hca",
+                "desc": "Amicae carae meae"
+            },
+            {
+                "filename": "bgm02_anime03_hca.hca",
+                "desc": "Clementia"
+            },
+            {
+                "filename": "bgm02_anime06_hca.hca",
+                "desc": "Confessio"
+            },
+            {
+                "filename": "bgm02_anime07_hca.hca",
+                "desc": "Cor destructum"
+            },
+            {
+                "filename": "bgm02_anime08_hca.hca",
+                "desc": "Terror adhaerens"
+            },
+            {
+                "filename": "bgm02_anime09_hca.hca",
+                "desc": "Symposium magarum"
+            },
+            {
+                "filename": "bgm02_anime10_2_hca.hca",
+                "desc": "Numquam vincar (加长版)"
+            },
+            {
+                "filename": "bgm02_anime10_hca.hca",
+                "desc": "Numquam vincar"
+            },
+            {
+                "filename": "bgm02_anime11_hca.hca",
+                "desc": "Quamobrem?"
+            },
+            {
+                "filename": "bgm02_anime12_hca.hca",
+                "desc": "Surgam identidem"
+            },
+            {
+                "filename": "bgm02_anime13_hca.hca",
+                "desc": "Nux Walpurgis"
+            },
+            {
+                "filename": "bgm02_anime14_hca.hca",
+                "desc": "Sagitta luminis"
+            },
+            {
+                "filename": "bgm02_anime15_hca.hca",
+                "desc": "Cubilulum album"
+            },
+            {
+                "filename": "bgm02_anime16_hca.hca",
+                "desc": "Taenia memoriae"
+            },
+            {
+                "filename": "bgm02_anime17_hca.hca",
+                "desc": "Pergo pugnare"
+            }
+        ]
+    },
+    {
+        "groupname": "Magireco BGM - From Madoka Magica Movies",
+        "entries": [
+            {
+                "filename": "bgm03_movie05_hca.hca",
+                "desc": "odd world #2"
+            },
+            {
+                "filename": "bgm03_movie10_hca.hca",
+                "desc": "something unusual"
+            },
+            {
+                "filename": "bgm03_movie11_hca.hca",
+                "desc": "crises happening"
+            },
+            {
+                "filename": "bgm03_movie12_hca.hca",
+                "desc": "witch world #1 魔女的世界 #1"
+            },
+            {
+                "filename": "bgm03_movie13_hca.hca",
+                "desc": "odd world #3"
+            },
+            {
+                "filename": "bgm03_movie14_hca.hca",
+                "desc": "wicked"
+            },
+            {
+                "filename": "bgm03_movie15_hca.hca",
+                "desc": "a human bullet"
+            },
+            {
+                "filename": "bgm03_movie17_hca.hca",
+                "desc": "touch-and-go"
+            },
+            {
+                "filename": "bgm03_movie20_hca.hca",
+                "desc": "she has a heart 她有一颗温暖的心"
+            },
+            {
+                "filename": "bgm03_movie22_hca.hca",
+                "desc": "wounded feeling"
+            },
+            {
+                "filename": "bgm03_movie23_hca.hca",
+                "desc": "witch world #2"
+            },
+            {
+                "filename": "bgm03_movie27_hca.hca",
+                "desc": "threatening"
+            },
+            {
+                "filename": "bgm03_movie29_hca.hca",
+                "desc": "fateful #4"
+            },
+            {
+                "filename": "bgm03_movie35_hca.hca",
+                "desc": "her wings 她的翅膀"
+            },
+            {
+                "filename": "bgm03_movie37_hca.hca",
+                "desc": "for the next episode 为了下次的篇章 (战斗结算曲)"
+            },
+            {
+                "filename": "bgm04_movie01_hca.hca",
+                "desc": "once we were"
+            },
+            {
+                "filename": "bgm04_movie02_hca.hca",
+                "desc": "nightmare ballet"
+            },
+            {
+                "filename": "bgm04_movie03_hca.hca",
+                "desc": "まだダメよ"
+            },
+            {
+                "filename": "bgm04_movie04_hca.hca",
+                "desc": "nice to meet you"
+            },
+            {
+                "filename": "bgm04_movie06_hca.hca",
+                "desc": "nightmare!!"
+            },
+            {
+                "filename": "bgm04_movie07_hca.hca",
+                "desc": "Holly Quintet"
+            },
+            {
+                "filename": "bgm04_movie08_hca.hca",
+                "desc": "one for all"
+            },
+            {
+                "filename": "bgm04_movie09_hca.hca",
+                "desc": "he is..."
+            },
+            {
+                "filename": "bgm04_movie11_hca.hca",
+                "desc": "the battlle is over"
+            },
+            {
+                "filename": "bgm04_movie12_hca.hca",
+                "desc": "something, everything is wrong"
+            },
+            {
+                "filename": "bgm04_movie13_hca.hca",
+                "desc": "raise the curtain"
+            },
+            {
+                "filename": "bgm04_movie14_hca.hca",
+                "desc": "never get there"
+            },
+            {
+                "filename": "bgm04_movie15_hca.hca",
+                "desc": "I remember"
+            },
+            {
+                "filename": "bgm04_movie16_hca.hca",
+                "desc": "face the truth"
+            },
+            {
+                "filename": "bgm04_movie17_hca.hca",
+                "desc": "doubt #2"
+            },
+            {
+                "filename": "bgm04_movie18_hca.hca",
+                "desc": "gonna fight with me"
+            },
+            {
+                "filename": "bgm04_movie19_hca.hca",
+                "desc": "absolute configuration"
+            },
+            {
+                "filename": "bgm04_movie20_hca.hca",
+                "desc": "her decision"
+            },
+            {
+                "filename": "bgm04_movie21_hca.hca",
+                "desc": "where is the truth?"
+            },
+            {
+                "filename": "bgm04_movie22_hca.hca",
+                "desc": "pulling my own weight"
+            },
+            {
+                "filename": "bgm04_movie23_hca.hca",
+                "desc": "another episode"
+            },
+            {
+                "filename": "bgm04_movie24_hca.hca",
+                "desc": "wanna destroy?"
+            },
+            {
+                "filename": "bgm04_movie25_hca.hca",
+                "desc": "dream world"
+            },
+            {
+                "filename": "bgm04_movie26_hca.hca",
+                "desc": "never leave you alone"
+            },
+            {
+                "filename": "bgm04_movie27_hca.hca",
+                "desc": "this is the truth"
+            },
+            {
+                "filename": "bgm04_movie28_hca.hca",
+                "desc": "flame of despair"
+            },
+            {
+                "filename": "bgm04_movie29_hca.hca",
+                "desc": "now he is"
+            },
+            {
+                "filename": "bgm04_movie30_hca.hca",
+                "desc": "you are here"
+            },
+            {
+                "filename": "bgm04_movie31_hca.hca",
+                "desc": "experimentation"
+            },
+            {
+                "filename": "bgm04_movie32_hca.hca",
+                "desc": "Noi!"
+            },
+            {
+                "filename": "bgm04_movie33_hca.hca",
+                "desc": "the worst ending"
+            },
+            {
+                "filename": "bgm04_movie34_hca.hca",
+                "desc": "I cursed myself"
+            },
+            {
+                "filename": "bgm04_movie35_hca.hca",
+                "desc": "this is my despair"
+            },
+            {
+                "filename": "bgm04_movie36_hca.hca",
+                "desc": "theater of a witch"
+            },
+            {
+                "filename": "bgm04_movie36_loop_hca.hca",
+                "desc": "theater of a witch (23年特别篇心魔)"
+            },
+            {
+                "filename": "bgm04_movie37_hca.hca",
+                "desc": "we're here for you"
+            },
+            {
+                "filename": "bgm04_movie38_hca.hca",
+                "desc": "take your hands"
+            },
+            {
+                "filename": "bgm04_movie39_hca.hca",
+                "desc": "wings of relief"
+            },
+            {
+                "filename": "bgm04_movie40_hca.hca",
+                "desc": "I was waiting for this moment"
+            },
+            {
+                "filename": "bgm04_movie41_hca.hca",
+                "desc": "her new wings"
+            },
+            {
+                "filename": "bgm04_movie42_hca.hca",
+                "desc": "solve the riddle"
+            },
+            {
+                "filename": "bgm04_movie43_hca.hca",
+                "desc": "I think this world is precious"
+            },
+            {
+                "filename": "bgm04_movie44_hca.hca",
+                "desc": "happy ending 美好的结局"
+            },
+            {
+                "filename": "bgm04_movie45_hca.hca",
+                "desc": "not yet"
+            }
+        ]
+    },
+    {
+        "groupname": "Magireco BGM - Collaborations",
+        "entries": [
+            {
+                "filename": "bgm90_lycoris01_hca.hca",
+                "desc": "2023 - 莉可丽丝 - リコリス・リコイルのテーマ"
+            },
+            {
+                "filename": "bgm90_lycoris02_hca.hca",
+                "desc": "2023 - 莉可丽丝 - 反撃開始"
+            },
+            {
+                "filename": "bgm90_monoga01_hca.hca",
+                "desc": "化物语 - 戦争"
+            },
+            {
+                "filename": "bgm90_monoga02_hca.hca",
+                "desc": "化物语 - 街談巷説"
+            },
+            {
+                "filename": "bgm90_monoga03_hca.hca",
+                "desc": "化物语 - 以下、回想"
+            },
+            {
+                "filename": "bgm90_monoga04_hca.hca",
+                "desc": "化物语 - 戦場ヶ原、蕩れ"
+            },
+            {
+                "filename": "bgm90_monoga05_hca.hca",
+                "desc": "化物语 - 雑多坩堝"
+            },
+            {
+                "filename": "bgm90_monoga06_hca.hca",
+                "desc": "化物语 - 日曜日"
+            },
+            {
+                "filename": "bgm90_monoga07_hca.hca",
+                "desc": "化物语 - 人畜"
+            },
+            {
+                "filename": "bgm90_monoga08_hca.hca",
+                "desc": "化物语 - 戯言"
+            },
+            {
+                "filename": "bgm90_monoga09_hca.hca",
+                "desc": "化物语 - 逢う魔が刻"
+            },
+            {
+                "filename": "bgm90_monoga10_hca.hca",
+                "desc": "化物语 - 放浪者"
+            },
+            {
+                "filename": "bgm90_monoga11_hca.hca",
+                "desc": "化物语 - 色ボケ猫"
+            },
+            {
+                "filename": "bgm90_nanoha01_hca.hca",
+                "desc": "2019 - ??? 奈叶联动曲-未知OST"
+            },
+            {
+                "filename": "bgm90_nanoha02_hca.hca",
+                "desc": "2019 - ??? 奈叶联动曲-未知OST"
+            },
+            {
+                "filename": "bgm90_nanoha03_hca.hca",
+                "desc": "2019 - ??? 奈叶联动曲-未知OST"
+            }
+        ]
+    }
+]
