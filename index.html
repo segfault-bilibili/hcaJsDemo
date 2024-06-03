@@ -1175,6 +1175,9 @@
                 window.addEventListener("hashchange", handleHashChange);
             });
             buttons.startworkerbtn = "click"; // start background worker
+
+            const addSelect2JsUrl =  new URL("add-select2.js", document.baseURI);
+            import(addSelect2JsUrl); // add bgm selector
         });
     </script>
 </body>
