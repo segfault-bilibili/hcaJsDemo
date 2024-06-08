@@ -55,9 +55,19 @@
 
     $('#bgm-selector').select2();
 
+    if (magireco_bgm.find(group => group.entries.find(entry =>
+        `#${entry.filename}` === window.location.hash
+    ) != null) != null) {
+        $('#bgm-selector').val(window.location.hash.replace(/^#/, ''));
+        $('#bgm-selector').trigger('change');
+    }
+
     $('#bgm-selector').on('change', (ev) => {
         let filename = ev.target.value;
-        if (filename == null || filename === '') return;
+        if (
+            filename == null || filename === ''
+            || `#${filename}` === window.location.hash
+        ) return;
         window.location.hash = `#${filename}`;
     });
 })();
